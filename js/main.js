@@ -1439,13 +1439,6 @@
     // Init splash
     initSplash();
 
-    // Prevent double-tap zoom on mobile
-    document.addEventListener('touchend', (e) => {
-      if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
     // Handle resize for confetti canvas
     window.addEventListener('resize', () => {
       const canvas = $('confetti-canvas');

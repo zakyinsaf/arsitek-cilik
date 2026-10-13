@@ -74,8 +74,16 @@ body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: manipulation;
 }
-button { font-family: inherit; cursor: pointer; border: none; outline: none; -webkit-tap-highlight-color: transparent; }
+button, .btn, .world-card, .level-card, .mcq-option, .formula-piece, .formula-slot, .btn-icon, .formula-header {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 input { font-family: inherit; outline: none; }
 img { max-width: 100%; display: block; }
 
