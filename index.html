@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Arsitek Cilik: Misi Pythagoras - Game edukasi matematika geometri dan Teorema Pythagoras bertema arsitektur lokal Aceh untuk siswa SMP (DMGC 2026 FKIP USK).">
+  <meta name="theme-color" content="#1B6B4A">
+  <title>Arsitek Cilik: Misi Pythagoras — Game Matematika SMP (DMGC 2026)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Canvas Confetti Efek Partikel -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <div id="app">
+    <!-- Header Aplikasi -->
+    <header id="game-header">
+      <div class="header-left">
+        <button id="btn-back" class="btn-icon btn-back hidden" aria-label="Kembali ke layar sebelumnya">←</button>
+      </div>
+      <div class="header-center" id="header-title">Arsitek Cilik</div>
+      <div class="header-right">
+        <span id="header-score" class="score-badge">⭐ 0</span>
+        <button id="btn-sound" class="btn-icon" aria-label="Toggle Suara">🔊</button>
+      </div>
+    </header>
+
+    <!-- 1. Layar Splash -->
+    <section id="screen-splash" class="screen active">
+      <div class="splash-subtitle">DMGC 2026 • HIMMAT FKIP UNIVERSITAS SYIAH KUALA</div>
+      <h1 class="splash-title">Arsitek Cilik<br><span style="color:var(--c-secondary-light)">Misi Pythagoras</span></h1>
+      <div id="splash-mascot" class="splash-mascot"></div>
+      <p class="splash-tagline">Bantu Arsitek Adi merehabilitasi mahakarya arsitektur rumoh panggung Aceh menggunakan kekuatan geometri!</p>
+      <button id="btn-start" class="btn btn-secondary">Mulai Petualangan 🚀</button>
+    </section>
+
+    <!-- 2. Layar Menu Utama -->
+    <section id="screen-menu" class="screen">
+      <div class="menu-hero">
+        <div class="mascot-speech-bubble" id="menu-mascot-speech">
+          Halo! Aku <b>Adi si Arsitek Cilik</b> 👷‍♂️📐<br>
+          Ayo jelajahi 5 dunia & taklukkan 25 tantangan geometri!
+        </div>
+        <div id="menu-mascot" class="menu-mascot" title="Ketuk aku untuk mengobrol!"></div>
+      </div>
+      <h1 class="menu-title">Arsitek Cilik<br><span style="color:var(--c-secondary)">Misi Pythagoras</span></h1>
+      <div class="menu-stats-pill">
+        <span>⭐ <strong id="menu-stars-count">0</strong>/75 Bintang</span>
+        <span class="pill-divider">•</span>
+        <span>🏆 <strong id="menu-score-count">0</strong> Poin</span>
+      </div>
+      <div class="menu-buttons">
+        <button id="btn-play" class="btn btn-primary btn-pulse">🎮 Mulai Petualangan</button>
+        <button id="btn-formula" class="btn btn-secondary">📐 Pelajari Rumus</button>
+        <button id="btn-about" class="btn btn-outline">ℹ️ Tentang Game</button>
+      </div>
+    </section>
+
+    <!-- 3. Layar Pilih Dunia (Dashboard Petualangan) -->
+    <section id="screen-world" class="screen">
+      <div class="dashboard-hero">
+        <div class="dashboard-hero-main">
+          <div class="dashboard-mascot-wrap">
+            <div id="dashboard-mascot" class="dashboard-mascot" title="Arsitek Adi"></div>
+          </div>
+          <div class="dashboard-greeting">
+            <h3 class="dashboard-title">Peta Misi Arsitek</h3>
+            <p class="dashboard-desc" id="dashboard-speech">Pilih dunia arsitektur untuk memulai tantangan!</p>
+          </div>
+        </div>
+        <div class="dashboard-stats-bar">
+          <div class="dash-stat-item">
+            <span class="dash-stat-icon">⭐</span>
+            <div class="dash-stat-text">
+              <span class="dash-stat-val" id="dash-total-stars">0/75</span>
+              <span class="dash-stat-lbl">Bintang</span>
+            </div>
+          </div>
+          <div class="dash-stat-item">
+            <span class="dash-stat-icon">🏆</span>
+            <div class="dash-stat-text">
+              <span class="dash-stat-val" id="dash-total-score">0</span>
+              <span class="dash-stat-lbl">Skor</span>
+            </div>
+          </div>
+          <div class="dash-stat-item">
+            <span class="dash-stat-icon">🗺️</span>
+            <div class="dash-stat-text">
+              <span class="dash-stat-val" id="dash-worlds-done">0/5</span>
+              <span class="dash-stat-lbl">Dunia</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="world-grid-heading">
+        <span>🗺️ Wilayah Arsitektur (5 Dunia)</span>
+      </div>
+      <div class="world-grid" id="world-grid"></div>
+    </section>
+
+    <!-- 4. Layar Pilih Level -->
+    <section id="screen-level" class="screen">
+      <div class="level-header">
+        <h2 id="level-world-label" class="level-world-title">Dunia</h2>
+      </div>
+      <div class="level-grid" id="level-grid"></div>
+    </section>
+
+    <!-- 5. Layar Cerita Intro Dunia -->
+    <section id="screen-story" class="screen">
+      <div class="story-illustration" id="story-illustration"></div>
+      <h2 class="story-world-title" id="story-world-title"></h2>
+      <div class="story-text" id="story-text-content"></div>
+      <button id="btn-story-continue" class="btn btn-primary">Lanjut ke Tantangan →</button>
+    </section>
+
+    <!-- 6. Layar Tantangan / Gameplay -->
+    <section id="screen-challenge" class="screen">
+      <div id="challenge-area"></div>
+    </section>
+
+    <!-- 7. Layar Hasil Level -->
+    <section id="screen-result" class="screen">
+      <div id="result-mascot" style="width:80px;height:100px;margin:0 auto 8px;"></div>
+      <div class="result-stars" id="result-stars"></div>
+      <div class="result-label">Skor Level</div>
+      <div class="result-score" id="result-score">0</div>
+      <div class="result-message" id="result-message"></div>
+      <div id="victory-message" class="victory-message hidden"></div>
+      <div class="result-buttons">
+        <button id="btn-retry" class="btn btn-accent">🔄 Ulangi</button>
+        <button id="btn-next-level" class="btn btn-primary">Lanjut →</button>
+        <button id="btn-result-menu" class="btn btn-outline">📋 Pilih Level</button>
+      </div>
+    </section>
+
+    <!-- 8. Layar Pelajari Rumus -->
+    <section id="screen-formula" class="screen">
+      <div style="text-align:center;margin-bottom:var(--sp-sm);">
+        <h2 style="font-size:var(--font-size-xl);color:var(--c-primary-dark);font-weight:800;">Buku Panduan Arsitek</h2>
+        <p style="color:var(--c-text-light);font-size:var(--font-size-sm);">Pelajari konsep rumus geometri dan Teorema Pythagoras untuk menyelesaikan misi</p>
+      </div>
+      <div class="formula-list" id="formula-list"></div>
+    </section>
+
+    <!-- 9. Layar Tentang Game -->
+    <section id="screen-about" class="screen">
+      <div class="about-card">
+        <div class="about-header-mascot" id="about-mascot"></div>
+        <h1 class="about-title">Arsitek Cilik: Misi Pythagoras</h1>
+        <p class="about-tagline"><strong>Petualangan Seru Menaklukkan Tantangan Matematika</strong></p>
+        <p class="about-desc">Arsitek Cilik: Misi Pythagoras adalah game edukasi matematika berbasis web yang dirancang untuk membantu siswa SMP/MTs memahami konsep geometri melalui permainan dan tantangan interaktif. Pemain diajak mengasah logika, menerapkan rumus matematika, dan menyelesaikan berbagai persoalan secara mandiri.</p>
+
+        <div class="about-section">
+          <h3 class="about-section-title">Tujuan Pembelajaran</h3>
+          <p>Membantu siswa memahami konsep keliling dan luas bangun datar, Teorema Pythagoras, serta tripel Pythagoras melalui latihan dan pemecahan masalah.</p>
+        </div>
+
+        <div class="about-section">
+          <h3 class="about-section-title">Materi Pembelajaran</h3>
+          <ul class="about-list">
+            <li>Keliling dan luas bangun datar, meliputi persegi, persegi panjang, segitiga, trapesium, jajargenjang, belah ketupat, dan layang-layang.</li>
+            <li>Teorema Pythagoras dan tripel Pythagoras.</li>
+          </ul>
+        </div>
+
+        <div class="about-section">
+          <h3 class="about-section-title">Sasaran Pengguna</h3>
+          <p>Siswa SMP/MTs , sebagai sarana belajar mandiri yang membantu memperkuat pemahaman konsep matematika.</p>
+        </div>
+
+        <div class="about-section">
+          <h3 class="about-section-title">Kompetisi</h3>
+          <p><strong>Digital Mathematics Game Competition (DMGC) 2026</strong><br>HIMMAT FKIP Universitas Syiah Kuala (USK)</p>
+        </div>
+
+        <div class="about-quote">
+          <em>Pahami konsepnya, pecahkan tantangannya!</em>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Script Modules -->
+  <script src="js/audio.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
