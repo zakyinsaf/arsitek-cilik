@@ -1051,6 +1051,271 @@ const GameEngine = (() => {
     return `<svg viewBox="0 0 ${vw} ${vh}" xmlns="${SVG_NS}" width="100%" height="100%">${inner}</svg>`;
   }
 
+  /* --- 3D Shapes Lab SVG Generator (Bangun Ruang) --- */
+  function renderShape3DLabSVG(shape, p = {}) {
+    const vw = 400, vh = 240;
+    const cx = vw / 2, cy = 115;
+    let inner = '';
+
+    if (shape === 'cube') {
+      const s = p.side || 6;
+      const d = Math.min(s * 8 + 25, 68);
+      const dx = d, dy = d * 0.52, dz = d * 1.05;
+
+      const A = [cx, cy];
+      const B = [cx + dx, cy - dy];
+      const C = [cx, cy - 2 * dy];
+      const D = [cx - dx, cy - dy];
+      const A2 = [cx, cy + dz];
+      const B2 = [cx + dx, cy - dy + dz];
+      const D2 = [cx - dx, cy - dy + dz];
+      const C2 = [cx, cy - 2 * dy + dz];
+
+      const vol = s * s * s;
+      const lp = 6 * s * s;
+
+      inner = `
+        <defs>
+          <linearGradient id="cube-top" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#E8F8F5"/>
+            <stop offset="100%" stop-color="#D1F2EB"/>
+          </linearGradient>
+          <linearGradient id="cube-left" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#A3E4D7"/>
+            <stop offset="100%" stop-color="#76D7C4"/>
+          </linearGradient>
+          <linearGradient id="cube-right" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#48C9B0"/>
+            <stop offset="100%" stop-color="#1ABC9C"/>
+          </linearGradient>
+        </defs>
+        <!-- Back hidden lines -->
+        <line x1="${C[0]}" y1="${C[1]}" x2="${C2[0]}" y2="${C2[1]}" stroke="#A2D9CE" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${C2[0]}" y1="${C2[1]}" x2="${D2[0]}" y2="${D2[1]}" stroke="#A2D9CE" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${C2[0]}" y1="${C2[1]}" x2="${B2[0]}" y2="${B2[1]}" stroke="#A2D9CE" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+        <!-- Top Face -->
+        <polygon points="${A[0]},${A[1]} ${B[0]},${B[1]} ${C[0]},${C[1]} ${D[0]},${D[1]}" fill="url(#cube-top)" stroke="#117864" stroke-width="2"/>
+        <!-- Left Face -->
+        <polygon points="${D[0]},${D[1]} ${A[0]},${A[1]} ${A2[0]},${A2[1]} ${D2[0]},${D2[1]}" fill="url(#cube-left)" stroke="#117864" stroke-width="2"/>
+        <!-- Right Face -->
+        <polygon points="${A[0]},${A[1]} ${B[0]},${B[1]} ${B2[0]},${B2[1]} ${A2[0]},${A2[1]}" fill="url(#cube-right)" stroke="#117864" stroke-width="2"/>
+
+        <!-- Labels -->
+        <text x="${(A[0] + D[0]) / 2 - 14}" y="${(A[1] + D[1]) / 2 + 10}" fill="#117864" font-size="11" font-weight="700" font-family="system-ui">s = ${s}</text>
+        <text x="${A[0] - 8}" y="${A[1] + dz / 2}" text-anchor="end" fill="#117864" font-size="11" font-weight="700" font-family="system-ui">s = ${s}</text>
+        <text x="${(A[0] + B[0]) / 2 + 12}" y="${(A[1] + B[1]) / 2 + 10}" fill="#117864" font-size="11" font-weight="700" font-family="system-ui">s = ${s}</text>
+        <text x="${cx}" y="222" text-anchor="middle" fill="#0E6251" font-size="13" font-weight="800" font-family="system-ui">V = s³ = ${vol} cm³  •  Lp = 6s² = ${lp} cm²</text>
+      `;
+    } else if (shape === 'cuboid') {
+      const pL = p.length || 8, w = p.width || 5, h = p.height || 6;
+      const dx = Math.min(pL * 7 + 20, 85);
+      const dy = Math.min(w * 5 + 15, 45);
+      const dz = Math.min(h * 7 + 20, 75);
+
+      const A = [cx - 15, cy - 5];
+      const B = [A[0] + dx, A[1] - dy * 0.6];
+      const C = [A[0] + dx - dy * 0.7, A[1] - dy * 1.6];
+      const D = [A[0] - dy * 0.7, A[1] - dy];
+      const A2 = [A[0], A[1] + dz];
+      const B2 = [B[0], B[1] + dz];
+      const D2 = [D[0], D[1] + dz];
+      const C2 = [C[0], C[1] + dz];
+
+      const vol = pL * w * h;
+      const lp = 2 * (pL * w + pL * h + w * h);
+
+      inner = `
+        <defs>
+          <linearGradient id="cuboid-top" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FEF9E7"/>
+            <stop offset="100%" stop-color="#FCF3CF"/>
+          </linearGradient>
+          <linearGradient id="cuboid-left" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#F9E79F"/>
+            <stop offset="100%" stop-color="#F7DC6F"/>
+          </linearGradient>
+          <linearGradient id="cuboid-right" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#F8C471"/>
+            <stop offset="100%" stop-color="#E8A838"/>
+          </linearGradient>
+        </defs>
+        <!-- Back hidden lines -->
+        <line x1="${C[0]}" y1="${C[1]}" x2="${C2[0]}" y2="${C2[1]}" stroke="#E59866" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${C2[0]}" y1="${C2[1]}" x2="${D2[0]}" y2="${D2[1]}" stroke="#E59866" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${C2[0]}" y1="${C2[1]}" x2="${B2[0]}" y2="${B2[1]}" stroke="#E59866" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+        <!-- Top Face -->
+        <polygon points="${A[0]},${A[1]} ${B[0]},${B[1]} ${C[0]},${C[1]} ${D[0]},${D[1]}" fill="url(#cuboid-top)" stroke="#B7791F" stroke-width="2"/>
+        <!-- Left Face -->
+        <polygon points="${D[0]},${D[1]} ${A[0]},${A[1]} ${A2[0]},${A2[1]} ${D2[0]},${D2[1]}" fill="url(#cuboid-left)" stroke="#B7791F" stroke-width="2"/>
+        <!-- Right Face -->
+        <polygon points="${A[0]},${A[1]} ${B[0]},${B[1]} ${B2[0]},${B2[1]} ${A2[0]},${A2[1]}" fill="url(#cuboid-right)" stroke="#B7791F" stroke-width="2"/>
+
+        <!-- Labels -->
+        <text x="${(A[0] + B[0]) / 2}" y="${A2[1] + 16}" text-anchor="middle" fill="#7D6608" font-size="11" font-weight="800" font-family="system-ui">p = ${pL} cm</text>
+        <text x="${(D[0] + A[0]) / 2 - 12}" y="${(D[1] + A[1]) / 2 - 4}" fill="#7D6608" font-size="11" font-weight="700" font-family="system-ui">l = ${w}</text>
+        <text x="${A[0] - 6}" y="${A[1] + dz / 2}" text-anchor="end" fill="#7D6608" font-size="11" font-weight="700" font-family="system-ui">t = ${h}</text>
+        <text x="${cx}" y="222" text-anchor="middle" fill="#7D6608" font-size="13" font-weight="800" font-family="system-ui">V = p×l×t = ${vol} cm³  •  Lp = ${lp} cm²</text>
+      `;
+    } else if (shape === 'prism') {
+      const a = p.base || 6, b = p.height || 8, len = p.length || 8;
+      const c = Math.sqrt(a * a + b * b);
+      const cDisp = Number.isInteger(c) ? c : c.toFixed(1);
+
+      const pxA = Math.min(a * 8, 65);
+      const pxB = Math.min(b * 7, 60);
+      const pxL = Math.min(len * 8, 80);
+
+      // Front right triangle
+      const x0 = cx - pxL / 2 - 20;
+      const y0 = cy + pxB / 2;
+      const f1 = [x0, y0];
+      const f2 = [x0 + pxA, y0];
+      const f3 = [x0, y0 - pxB];
+
+      // Back triangle
+      const b1 = [f1[0] + pxL, f1[1] - pxL * 0.4];
+      const b2 = [f2[0] + pxL, f2[1] - pxL * 0.4];
+      const b3 = [f3[0] + pxL, f3[1] - pxL * 0.4];
+
+      const la = 0.5 * a * b;
+      const vol = la * len;
+      const lp = (2 * la) + (a + b + c) * len;
+
+      inner = `
+        <defs>
+          <linearGradient id="prism-side" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#D4E6F1"/>
+            <stop offset="100%" stop-color="#A9CCE3"/>
+          </linearGradient>
+          <linearGradient id="prism-front" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#EBF5FB"/>
+            <stop offset="100%" stop-color="#D4E6F1"/>
+          </linearGradient>
+        </defs>
+        <!-- Hidden back edges -->
+        <line x1="${f1[0]}" y1="${f1[1]}" x2="${b1[0]}" y2="${b1[1]}" stroke="#85929E" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${b1[0]}" y1="${b1[1]}" x2="${b2[0]}" y2="${b2[1]}" stroke="#85929E" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${b1[0]}" y1="${b1[1]}" x2="${b3[0]}" y2="${b3[1]}" stroke="#85929E" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+        <!-- Top / Slant Rect Face -->
+        <polygon points="${f3[0]},${f3[1]} ${f2[0]},${f2[1]} ${b2[0]},${b2[1]} ${b3[0]},${b3[1]}" fill="url(#prism-side)" stroke="#2471A3" stroke-width="2"/>
+        <!-- Front Triangle Face -->
+        <polygon points="${f1[0]},${f1[1]} ${f2[0]},${f2[1]} ${f3[0]},${f3[1]}" fill="url(#prism-front)" stroke="#1B4F72" stroke-width="2.5"/>
+        <!-- Right angle mark -->
+        <rect x="${f1[0]}" y="${f1[1] - 10}" width="10" height="10" fill="none" stroke="#1B4F72" stroke-width="1.5"/>
+
+        <!-- Back outer lines -->
+        <line x1="${f2[0]}" y1="${f2[1]}" x2="${b2[0]}" y2="${b2[1]}" stroke="#2471A3" stroke-width="2"/>
+        <line x1="${f3[0]}" y1="${f3[1]}" x2="${b3[0]}" y2="${b3[1]}" stroke="#2471A3" stroke-width="2"/>
+        <line x1="${b3[0]}" y1="${b3[1]}" x2="${b2[0]}" y2="${b2[1]}" stroke="#2471A3" stroke-width="2"/>
+
+        <!-- Labels -->
+        <text x="${(f1[0] + f2[0]) / 2}" y="${f1[1] + 16}" text-anchor="middle" fill="#1B4F72" font-size="11" font-weight="700">a = ${a}</text>
+        <text x="${f1[0] - 8}" y="${(f1[1] + f3[1]) / 2}" text-anchor="end" fill="#1B4F72" font-size="11" font-weight="700">t = ${b}</text>
+        <text x="${(f2[0] + f3[0]) / 2 + 10}" y="${(f2[1] + f3[1]) / 2 - 4}" fill="#E74C3C" font-size="11" font-weight="800">c = ${cDisp}</text>
+        <text x="${(f3[0] + b3[0]) / 2 + 6}" y="${(f3[1] + b3[1]) / 2 - 10}" fill="#2471A3" font-size="11" font-weight="700">T = ${len}</text>
+        <text x="${cx}" y="222" text-anchor="middle" fill="#1B4F72" font-size="13" font-weight="800">V = La×T = ${vol} cm³  •  Lp = ${lp.toFixed(1)} cm²</text>
+      `;
+    } else if (shape === 'pyramid') {
+      const s = p.side || 8, h = p.height || 7;
+      const pxS = Math.min(s * 7 + 25, 80);
+      const pxH = Math.min(h * 7 + 25, 85);
+
+      const baseCenter = [cx, cy + 30];
+      const apex = [cx, baseCenter[1] - pxH];
+
+      const p1 = [baseCenter[0] - pxS, baseCenter[1]];
+      const p2 = [baseCenter[0], baseCenter[1] + pxS * 0.45];
+      const p3 = [baseCenter[0] + pxS, baseCenter[1]];
+      const p4 = [baseCenter[0], baseCenter[1] - pxS * 0.45];
+
+      // Slant height ts = sqrt(h^2 + (s/2)^2)
+      const ts = Math.sqrt(h * h + (s / 2) * (s / 2));
+      const vol = ((s * s * h) / 3).toFixed(1);
+      const lp = (s * s + 4 * (0.5 * s * ts)).toFixed(1);
+
+      inner = `
+        <defs>
+          <linearGradient id="pyr-left" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FADBD8"/>
+            <stop offset="100%" stop-color="#F5B7B1"/>
+          </linearGradient>
+          <linearGradient id="pyr-right" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#EDBB99"/>
+            <stop offset="100%" stop-color="#E59866"/>
+          </linearGradient>
+        </defs>
+        <!-- Hidden base edges -->
+        <line x1="${p1[0]}" y1="${p1[1]}" x2="${p4[0]}" y2="${p4[1]}" stroke="#BDC3C7" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="${p4[0]}" y1="${p4[1]}" x2="${p3[0]}" y2="${p3[1]}" stroke="#BDC3C7" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <!-- Height line -->
+        <line x1="${baseCenter[0]}" y1="${baseCenter[1]}" x2="${apex[0]}" y2="${apex[1]}" stroke="#C0392B" stroke-width="2" stroke-dasharray="3,3"/>
+        <circle cx="${baseCenter[0]}" cy="${baseCenter[1]}" r="3" fill="#C0392B"/>
+
+        <!-- Left Triangular Face -->
+        <polygon points="${apex[0]},${apex[1]} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}" fill="url(#pyr-left)" stroke="#922B21" stroke-width="2"/>
+        <!-- Right Triangular Face -->
+        <polygon points="${apex[0]},${apex[1]} ${p2[0]},${p2[1]} ${p3[0]},${p3[1]}" fill="url(#pyr-right)" stroke="#922B21" stroke-width="2"/>
+
+        <!-- Slant height line on right face -->
+        <line x1="${apex[0]}" y1="${apex[1]}" x2="${(p2[0] + p3[0]) / 2}" y2="${(p2[1] + p3[1]) / 2}" stroke="#27AE60" stroke-width="1.8" stroke-dasharray="3,2"/>
+
+        <!-- Labels -->
+        <text x="${(p1[0] + p2[0]) / 2 - 10}" y="${(p1[1] + p2[1]) / 2 + 15}" fill="#922B21" font-size="11" font-weight="700">s = ${s}</text>
+        <text x="${baseCenter[0] + 6}" y="${baseCenter[1] - pxH / 2}" fill="#C0392B" font-size="11" font-weight="800">t = ${h}</text>
+        <text x="${(p2[0] + p3[0]) / 2 + 18}" y="${(apex[1] + p2[1]) / 2}" fill="#27AE60" font-size="11" font-weight="700">ts = ${ts.toFixed(1)}</text>
+        <text x="${cx}" y="222" text-anchor="middle" fill="#922B21" font-size="13" font-weight="800">V = ⅓×La×t = ${vol} cm³  •  Lp = ${lp} cm²</text>
+      `;
+    } else if (shape === 'cylinder') {
+      const r = p.radius || 4, h = p.height || 8;
+      const rx = Math.min(r * 9 + 15, 60);
+      const ry = rx * 0.38;
+      const pxH = Math.min(h * 7 + 25, 90);
+
+      const yTop = cy - pxH / 2;
+      const yBot = cy + pxH / 2;
+
+      const vol = (Math.PI * r * r * h).toFixed(1);
+      const lp = (2 * Math.PI * r * (r + h)).toFixed(1);
+
+      inner = `
+        <defs>
+          <linearGradient id="cyl-body" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#D7BDE2"/>
+            <stop offset="30%" stop-color="#EBDEF0"/>
+            <stop offset="70%" stop-color="#D7BDE2"/>
+            <stop offset="100%" stop-color="#AF7AC5"/>
+          </linearGradient>
+          <linearGradient id="cyl-top" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#F5EEF8"/>
+            <stop offset="100%" stop-color="#EBDEF0"/>
+          </linearGradient>
+        </defs>
+        <!-- Bottom dashed back curve -->
+        <path d="M ${cx - rx} ${yBot} A ${rx} ${ry} 0 0 1 ${cx + rx} ${yBot}" fill="none" stroke="#A569BD" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <!-- Bottom front curve & Body -->
+        <path d="M ${cx - rx} ${yTop} L ${cx - rx} ${yBot} A ${rx} ${ry} 0 0 0 ${cx + rx} ${yBot} L ${cx + rx} ${yTop} Z" fill="url(#cyl-body)" stroke="#6C3483" stroke-width="2"/>
+        <!-- Top Full Ellipse -->
+        <ellipse cx="${cx}" cy="${yTop}" rx="${rx}" ry="${ry}" fill="url(#cyl-top)" stroke="#6C3483" stroke-width="2"/>
+
+        <!-- Radius line on top -->
+        <line x1="${cx}" y1="${yTop}" x2="${cx + rx}" y2="${yTop}" stroke="#1C2833" stroke-width="2"/>
+        <circle cx="${cx}" cy="${yTop}" r="2.5" fill="#1C2833"/>
+        <text x="${cx + rx / 2}" y="${yTop - 6}" text-anchor="middle" fill="#512E5F" font-size="11" font-weight="800">r = ${r}</text>
+
+        <!-- Height line on side -->
+        <line x1="${cx + rx + 12}" y1="${yTop}" x2="${cx + rx + 12}" y2="${yBot}" stroke="#7D3C98" stroke-width="1.5"/>
+        <text x="${cx + rx + 18}" y="${cy}" fill="#512E5F" font-size="11" font-weight="800">t = ${h}</text>
+
+        <text x="${cx}" y="222" text-anchor="middle" fill="#512E5F" font-size="13" font-weight="800">V = πr²t ≈ ${vol} cm³  •  Lp = 2πr(r+t) ≈ ${lp} cm²</text>
+      `;
+    }
+
+    return `<svg viewBox="0 0 ${vw} ${vh}" xmlns="${SVG_NS}" width="100%" height="100%">${inner}</svg>`;
+  }
+
   /* --- Public API --- */
   return {
     state,
@@ -1076,6 +1341,7 @@ const GameEngine = (() => {
     renderShapeSVG,
     renderPythagorasProofSVG,
     renderShapeLabSVG,
+    renderShape3DLabSVG,
     startConfetti,
     stopConfetti,
     startBgParticles,

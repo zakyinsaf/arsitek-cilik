@@ -1961,19 +1961,27 @@ img { max-width: 100%; display: block; }
   padding: 4px;
   border-radius: var(--r-md);
   gap: 4px;
-  max-width: 420px;
+  max-width: 480px;
   margin: 0 auto;
   width: 100%;
 }
 .lab-tab {
   flex: 1;
-  padding: 8px 12px;
+  padding: 8px 6px;
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--c-text-light);
   font-weight: 700;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   transition: all var(--t-fast);
+  white-space: nowrap;
+  text-align: center;
+}
+@media (min-width: 420px) {
+  .lab-tab {
+    font-size: var(--font-size-sm);
+    padding: 8px 12px;
+  }
 }
 .lab-tab.active {
   background: white;
@@ -2199,28 +2207,78 @@ img { max-width: 100%; display: block; }
   font-size: var(--font-size-sm);
   line-height: 1.4;
 }
-.speed-record-box {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-md);
-  background: linear-gradient(135deg, rgba(232,168,56,0.12), rgba(232,168,56,0.04));
-  border: 1px solid rgba(232,168,56,0.3);
+.speed-best-record-card {
+  background: linear-gradient(135deg, rgba(254, 249, 231, 0.95), rgba(255, 243, 204, 0.85));
+  border: 2px solid var(--c-secondary);
+  border-radius: var(--r-lg);
   padding: var(--sp-md);
-  border-radius: var(--r-md);
-}
-.speed-record-icon { font-size: 32px; }
-.speed-record-info {
+  box-shadow: 0 4px 16px rgba(232, 168, 56, 0.18);
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  text-align: center;
 }
-.speed-record-label {
-  font-size: var(--font-size-xs);
-  color: var(--c-text-light);
-}
-.speed-record-val {
-  font-size: var(--font-size-lg);
+.speed-record-badge {
+  font-size: 11px;
   font-weight: 800;
-  color: var(--c-secondary-dark);
+  color: #B7791F;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.speed-record-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+.speed-record-correct-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.speed-record-num {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--c-primary-dark);
+  line-height: 1;
+}
+.speed-record-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-primary);
+}
+.speed-record-divider {
+  width: 1.5px;
+  height: 38px;
+  background: rgba(183, 121, 31, 0.3);
+}
+.speed-record-time-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.speed-record-time-icon { font-size: 26px; }
+.speed-record-time-val {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--c-accent);
+  line-height: 1;
+}
+.speed-record-time-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--c-text-light);
+  text-align: left;
+}
+.speed-record-tag {
+  font-size: 11.5px;
+  color: #7D6608;
+  font-weight: 600;
+  background: rgba(232, 168, 56, 0.12);
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  align-self: center;
 }
 .speed-tips {
   background: var(--c-bg);
@@ -2300,10 +2358,42 @@ img { max-width: 100%; display: block; }
   text-align: center;
   padding: var(--sp-sm) 0;
 }
+.speed-q-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
 .speed-q-badge {
   font-size: var(--font-size-xs);
   color: var(--c-text-light);
   font-weight: 700;
+}
+.speed-q-progress {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--c-primary-dark);
+  background: rgba(27,107,74,0.1);
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  letter-spacing: 0.3px;
+}
+.speed-q-progress.bonus {
+  background: linear-gradient(135deg, #F39C12, #E67E22);
+  color: white;
+  animation: pulse 1.2s infinite;
+}
+.speed-time-record-box {
+  background: linear-gradient(135deg, rgba(46,204,113,0.18), rgba(39,174,96,0.28));
+  border: 1.5px solid var(--c-success);
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: #145A32;
+  font-weight: 700;
+  animation: popIn 0.35s ease;
 }
 .speed-q-text {
   font-size: var(--font-size-md);

@@ -140,9 +140,15 @@
   /* --- Screen Router --- */
   function showScreen(name, options = {}) {
     SpeechHelper.stop();
-    if (currentScreen === 'speed' && name !== 'speed' && speedTimerInterval) {
-      clearInterval(speedTimerInterval);
-      speedTimerInterval = null;
+    if (currentScreen === 'speed' && name !== 'speed') {
+      if (speedTimerInterval) {
+        clearInterval(speedTimerInterval);
+        speedTimerInterval = null;
+      }
+      if (speedQuestionTimeout) {
+        clearTimeout(speedQuestionTimeout);
+        speedQuestionTimeout = null;
+      }
     }
     // Hide all screens
     Object.values(screens).forEach(s => { if (s) s.classList.remove('active'); });
@@ -205,6 +211,10 @@
         if (speedTimerInterval) {
           clearInterval(speedTimerInterval);
           speedTimerInterval = null;
+        }
+        if (speedQuestionTimeout) {
+          clearTimeout(speedQuestionTimeout);
+          speedQuestionTimeout = null;
         }
         showScreen('menu');
         break;
@@ -1802,6 +1812,14 @@
     trapezoid: { top: 4, bottom: 8, height: 5 },
     circle: { radius: 4 }
   };
+  let activeLabShape3D = 'cube';
+  const labShape3DParams = {
+    cube: { side: 6 },
+    cuboid: { length: 8, width: 5, height: 6 },
+    prism: { base: 6, height: 8, length: 8 },
+    pyramid: { side: 8, height: 7 },
+    cylinder: { radius: 4, height: 8 }
+  };
   let labInitialized = false;
 
   function updatePythagorasLab() {
@@ -2036,6 +2054,235 @@
     updateShapeLab();
   }
 
+  function updateShape3DLab() {
+    const p = labShape3DParams[activeLabShape3D];
+    const svgWrap = $('lab-3d-svg');
+    if (svgWrap) {
+      svgWrap.innerHTML = GameEngine.renderShape3DLabSVG(activeLabShape3D, p);
+    }
+
+    const calcBox = $('lab-3d-calc');
+    if (!calcBox) return;
+
+    if (activeLabShape3D === 'cube') {
+      const s = p.side;
+      const vol = s * s * s;
+      const lp = 6 * s * s;
+      calcBox.innerHTML = `
+        <div class="formula-row">Kubus (panjang rusuk s = ${s} cm)</div>
+        <div class="calc-row">Volume = s³ = ${s} × ${s} × ${s} = <strong>${vol} cm³</strong></div>
+        <div class="calc-row">Luas Permukaan = 6 × s² = 6 × ${s * s} = <strong>${lp} cm²</strong></div>
+      `;
+    } else if (activeLabShape3D === 'cuboid') {
+      const pL = p.length, l = p.width, t = p.height;
+      const vol = pL * l * t;
+      const lp = 2 * (pL * l + pL * t + l * t);
+      calcBox.innerHTML = `
+        <div class="formula-row">Balok (panjang p = ${pL} cm, lebar l = ${l} cm, tinggi t = ${t} cm)</div>
+        <div class="calc-row">Volume = p × l × t = ${pL} × ${l} × ${t} = <strong>${vol} cm³</strong></div>
+        <div class="calc-row">Luas Permukaan = 2 × (pl + pt + lt) = 2 × (${pL*l} + ${pL*t} + ${l*t}) = <strong>${lp} cm²</strong></div>
+      `;
+    } else if (activeLabShape3D === 'prism') {
+      const a = p.base, b = p.height, T = p.length;
+      const c = Math.sqrt(a * a + b * b);
+      const cDisp = Number.isInteger(c) ? c : c.toFixed(1);
+      const la = 0.5 * a * b;
+      const vol = Math.round(la * T);
+      const lp = (2 * la) + (a + b + c) * T;
+      calcBox.innerHTML = `
+        <div class="formula-row">Prisma Segitiga Siku-Siku (alas a = ${a} cm, b = ${b} cm, Tinggi Prisma T = ${T} cm)</div>
+        <div class="calc-row">Sisi miring segitiga alas (Pythagoras): c = √(a² + b²) = √(${a*a} + ${b*b}) = <strong>${cDisp} cm</strong></div>
+        <div class="calc-row">Luas Alas (La) = ½ × a × b = ½ × ${a} × ${b} = <strong>${la} cm²</strong></div>
+        <div class="calc-row">Volume = La × T = ${la} × ${T} = <strong>${vol} cm³</strong></div>
+        <div class="calc-row">Luas Permukaan = 2×La + (a + b + c)×T = ${2 * la} + ${((a + b + c) * T).toFixed(1)} = <strong>${lp.toFixed(1)} cm²</strong></div>
+      `;
+    } else if (activeLabShape3D === 'pyramid') {
+      const s = p.side, t = p.height;
+      const halfS = s / 2;
+      const ts = Math.sqrt(t * t + halfS * halfS);
+      const vol = ((s * s * t) / 3).toFixed(1);
+      const lp = (s * s + 4 * (0.5 * s * ts)).toFixed(1);
+      calcBox.innerHTML = `
+        <div class="formula-row">Limas Persegi (rusuk alas s = ${s} cm, tinggi limas t = ${t} cm)</div>
+        <div class="calc-row">Tinggi sisi tegak (Pythagoras): ts = √(t² + (s/2)²) = √(${t*t} + ${(halfS*halfS).toFixed(1)}) ≈ <strong>${ts.toFixed(1)} cm</strong></div>
+        <div class="calc-row">Volume = ⅓ × s² × t = ⅓ × ${s*s} × ${t} ≈ <strong>${vol} cm³</strong></div>
+        <div class="calc-row">Luas Permukaan = s² + 4 × (½ × s × ts) ≈ <strong>${lp} cm²</strong></div>
+      `;
+    } else if (activeLabShape3D === 'cylinder') {
+      const r = p.radius, t = p.height;
+      const vol = (Math.PI * r * r * t).toFixed(1);
+      const lp = (2 * Math.PI * r * (r + t)).toFixed(1);
+      calcBox.innerHTML = `
+        <div class="formula-row">Tabung (jari-jari r = ${r} cm, tinggi t = ${t} cm)</div>
+        <div class="calc-row">Volume = π × r² × t ≈ 3.14 × ${r*r} × ${t} ≈ <strong>${vol} cm³</strong></div>
+        <div class="calc-row">Luas Permukaan = 2 × π × r × (r + t) ≈ 2 × 3.14 × ${r} × (${r + t}) ≈ <strong>${lp} cm²</strong></div>
+      `;
+    }
+  }
+
+  function renderShape3DControls() {
+    const controls = $('lab-3d-controls');
+    if (!controls) return;
+    controls.innerHTML = '';
+
+    const p = labShape3DParams[activeLabShape3D];
+
+    if (activeLabShape3D === 'cube') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Panjang Rusuk (s): <strong id="lbl-3d-s">${p.side}</strong> cm</span>
+            <span class="badge-sq">Vol: <span id="lbl-3d-cube-vol">${p.side * p.side * p.side}</span> cm³</span>
+          </div>
+          <input type="range" id="slider-3d-s" min="2" max="12" value="${p.side}" class="custom-slider">
+        </div>
+      `;
+      $('slider-3d-s').addEventListener('input', (e) => {
+        p.side = parseInt(e.target.value, 10);
+        const lS = $('lbl-3d-s'); if (lS) lS.textContent = p.side;
+        const lV = $('lbl-3d-cube-vol'); if (lV) lV.textContent = p.side * p.side * p.side;
+        updateShape3DLab();
+      });
+    } else if (activeLabShape3D === 'cuboid') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Panjang (p): <strong id="lbl-3d-len">${p.length}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-3d-len" min="3" max="15" value="${p.length}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Lebar (l): <strong id="lbl-3d-w">${p.width}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-3d-w" min="2" max="10" value="${p.width}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi (t): <strong id="lbl-3d-h">${p.height}</strong> cm</span>
+            <span class="badge-sq">Vol: <span id="lbl-3d-cuboid-vol">${p.length * p.width * p.height}</span> cm³</span>
+          </div>
+          <input type="range" id="slider-3d-h" min="2" max="12" value="${p.height}" class="custom-slider">
+        </div>
+      `;
+      $('slider-3d-len').addEventListener('input', (e) => {
+        p.length = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-len'); if (el) el.textContent = p.length;
+        const lV = $('lbl-3d-cuboid-vol'); if (lV) lV.textContent = p.length * p.width * p.height;
+        updateShape3DLab();
+      });
+      $('slider-3d-w').addEventListener('input', (e) => {
+        p.width = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-w'); if (el) el.textContent = p.width;
+        const lV = $('lbl-3d-cuboid-vol'); if (lV) lV.textContent = p.length * p.width * p.height;
+        updateShape3DLab();
+      });
+      $('slider-3d-h').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-h'); if (el) el.textContent = p.height;
+        const lV = $('lbl-3d-cuboid-vol'); if (lV) lV.textContent = p.length * p.width * p.height;
+        updateShape3DLab();
+      });
+    } else if (activeLabShape3D === 'prism') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Sisi Alas Segitiga (a): <strong id="lbl-3d-pa">${p.base}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-3d-pa" min="3" max="12" value="${p.base}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi Alas Segitiga (b): <strong id="lbl-3d-pb">${p.height}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-3d-pb" min="4" max="12" value="${p.height}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi Prisma (T): <strong id="lbl-3d-pt">${p.length}</strong> cm</span>
+            <span class="badge-sq">Vol: <span id="lbl-3d-prism-vol">${Math.round(0.5 * p.base * p.height * p.length)}</span> cm³</span>
+          </div>
+          <input type="range" id="slider-3d-pt" min="3" max="15" value="${p.length}" class="custom-slider">
+        </div>
+      `;
+      $('slider-3d-pa').addEventListener('input', (e) => {
+        p.base = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-pa'); if (el) el.textContent = p.base;
+        const lV = $('lbl-3d-prism-vol'); if (lV) lV.textContent = Math.round(0.5 * p.base * p.height * p.length);
+        updateShape3DLab();
+      });
+      $('slider-3d-pb').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-pb'); if (el) el.textContent = p.height;
+        const lV = $('lbl-3d-prism-vol'); if (lV) lV.textContent = Math.round(0.5 * p.base * p.height * p.length);
+        updateShape3DLab();
+      });
+      $('slider-3d-pt').addEventListener('input', (e) => {
+        p.length = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-pt'); if (el) el.textContent = p.length;
+        const lV = $('lbl-3d-prism-vol'); if (lV) lV.textContent = Math.round(0.5 * p.base * p.height * p.length);
+        updateShape3DLab();
+      });
+    } else if (activeLabShape3D === 'pyramid') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Sisi Alas Persegi (s): <strong id="lbl-3d-pys">${p.side}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-3d-pys" min="4" max="14" value="${p.side}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi Limas (t): <strong id="lbl-3d-pyh">${p.height}</strong> cm</span>
+            <span class="badge-sq">Vol: <span id="lbl-3d-pyr-vol">${((p.side * p.side * p.height) / 3).toFixed(1)}</span> cm³</span>
+          </div>
+          <input type="range" id="slider-3d-pyh" min="3" max="14" value="${p.height}" class="custom-slider">
+        </div>
+      `;
+      $('slider-3d-pys').addEventListener('input', (e) => {
+        p.side = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-pys'); if (el) el.textContent = p.side;
+        const lV = $('lbl-3d-pyr-vol'); if (lV) lV.textContent = ((p.side * p.side * p.height) / 3).toFixed(1);
+        updateShape3DLab();
+      });
+      $('slider-3d-pyh').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-pyh'); if (el) el.textContent = p.height;
+        const lV = $('lbl-3d-pyr-vol'); if (lV) lV.textContent = ((p.side * p.side * p.height) / 3).toFixed(1);
+        updateShape3DLab();
+      });
+    } else if (activeLabShape3D === 'cylinder') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Jari-jari (r): <strong id="lbl-3d-cylr">${p.radius}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-3d-cylr" min="2" max="10" value="${p.radius}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi Tabung (t): <strong id="lbl-3d-cylh">${p.height}</strong> cm</span>
+            <span class="badge-sq">Vol: ≈<span id="lbl-3d-cyl-vol">${(Math.PI * p.radius * p.radius * p.height).toFixed(1)}</span> cm³</span>
+          </div>
+          <input type="range" id="slider-3d-cylh" min="3" max="14" value="${p.height}" class="custom-slider">
+        </div>
+      `;
+      $('slider-3d-cylr').addEventListener('input', (e) => {
+        p.radius = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-cylr'); if (el) el.textContent = p.radius;
+        const lV = $('lbl-3d-cyl-vol'); if (lV) lV.textContent = (Math.PI * p.radius * p.radius * p.height).toFixed(1);
+        updateShape3DLab();
+      });
+      $('slider-3d-cylh').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const el = $('lbl-3d-cylh'); if (el) el.textContent = p.height;
+        const lV = $('lbl-3d-cyl-vol'); if (lV) lV.textContent = (Math.PI * p.radius * p.radius * p.height).toFixed(1);
+        updateShape3DLab();
+      });
+    }
+    updateShape3DLab();
+  }
+
   function renderLab() {
     if (!labInitialized) {
       labInitialized = true;
@@ -2065,79 +2312,131 @@
 
       const tabPyth = $('tab-lab-pythagoras');
       const tabShapes = $('tab-lab-shapes');
+      const tab3D = $('tab-lab-3d');
       const contentPyth = $('lab-content-pythagoras');
       const contentShapes = $('lab-content-shapes');
+      const content3D = $('lab-content-3d');
 
-      if (tabPyth && tabShapes) {
-        tabPyth.addEventListener('click', () => {
-          GameAudio.click();
-          activeLabTab = 'pythagoras';
-          tabPyth.classList.add('active');
-          tabShapes.classList.remove('active');
-          if (contentPyth) contentPyth.classList.remove('hidden');
-          if (contentShapes) contentShapes.classList.add('hidden');
+      function switchLabTab(tabName) {
+        activeLabTab = tabName;
+        if (tabPyth) tabPyth.classList.toggle('active', tabName === 'pythagoras');
+        if (tabShapes) tabShapes.classList.toggle('active', tabName === 'shapes');
+        if (tab3D) tab3D.classList.toggle('active', tabName === '3d');
+
+        if (contentPyth) contentPyth.classList.toggle('hidden', tabName !== 'pythagoras');
+        if (contentShapes) contentShapes.classList.toggle('hidden', tabName !== 'shapes');
+        if (content3D) content3D.classList.toggle('hidden', tabName !== '3d');
+
+        if (tabName === 'pythagoras') {
           updatePythagorasLab();
-        });
-        tabShapes.addEventListener('click', () => {
-          GameAudio.click();
-          activeLabTab = 'shapes';
-          tabShapes.classList.add('active');
-          tabPyth.classList.remove('active');
-          if (contentPyth) contentPyth.classList.add('hidden');
-          if (contentShapes) contentShapes.classList.remove('hidden');
+        } else if (tabName === 'shapes') {
           renderShapeControls();
-        });
+        } else if (tabName === '3d') {
+          renderShape3DControls();
+        }
       }
 
-      document.querySelectorAll('.shape-pill').forEach(pill => {
+      if (tabPyth) tabPyth.addEventListener('click', () => { GameAudio.click(); switchLabTab('pythagoras'); });
+      if (tabShapes) tabShapes.addEventListener('click', () => { GameAudio.click(); switchLabTab('shapes'); });
+      if (tab3D) tab3D.addEventListener('click', () => { GameAudio.click(); switchLabTab('3d'); });
+
+      document.querySelectorAll('#shape-selector-pills .shape-pill').forEach(pill => {
         pill.addEventListener('click', () => {
           GameAudio.click();
-          document.querySelectorAll('.shape-pill').forEach(p => p.classList.remove('active'));
+          document.querySelectorAll('#shape-selector-pills .shape-pill').forEach(p => p.classList.remove('active'));
           pill.classList.add('active');
           activeLabShape = pill.getAttribute('data-shape');
           renderShapeControls();
+        });
+      });
+
+      document.querySelectorAll('#shape-3d-selector-pills .shape-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          GameAudio.click();
+          document.querySelectorAll('#shape-3d-selector-pills .shape-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          activeLabShape3D = pill.getAttribute('data-shape-3d');
+          renderShape3DControls();
         });
       });
     }
 
     if (activeLabTab === 'pythagoras') {
       updatePythagorasLab();
-    } else {
+    } else if (activeLabTab === 'shapes') {
       renderShapeControls();
+    } else if (activeLabTab === '3d') {
+      renderShape3DControls();
     }
   }
 
   /* ========================================================
-     UJIAN KILAT PYTHAGORAS (TIME-ATTACK 60 DETIK)
+     UJIAN KILAT PYTHAGORAS (TIME-ATTACK 60 DETIK & 25 SOAL)
+     Tingkat Kesulitan Progresif (SMP Kelas VII - VIII):
+       - Level 1 (Soal 1-5): Pemanasan & Konsep Dasar Kuadrat & Tripel 3-4-5
+       - Level 2 (Soal 6-10): Mencari Sisi Siku-Siku & Tripel 5-12-13
+       - Level 3 (Soal 11-15): Tripel Lanjutan (8-15-17, 7-24-25) & Uji Jenis Segitiga
+       - Level 4 (Soal 16-20): Aplikasi Arsitektur & Soal Cerita Nyata (Target Utama: 20 Soal)
+       - Level 5 (Soal 21-25): SUPER SPEED BONUS Menuju Rekor Waktu 25 Soal!
      ======================================================== */
   let speedTimeRemaining = 60;
-  let speedScore = 0;
   let speedCombo = 1;
   let speedMaxCombo = 1;
   let speedCorrectCount = 0;
+  let speedQuestionIndex = 0;
   let speedTimerInterval = null;
+  let speedQuestionTimeout = null;
   let speedAnsweringLocked = false;
   let speedInitialized = false;
 
-  const SPEED_TRIPLES = [
-    [3, 4, 5],
-    [5, 12, 13],
-    [6, 8, 10],
-    [7, 24, 25],
-    [8, 15, 17],
-    [9, 12, 15],
-    [10, 24, 26],
-    [12, 16, 20],
-    [15, 20, 25],
-    [9, 40, 41]
-  ];
+  const SPEED_TOTAL_QUESTIONS = 25;
+  const SPEED_REGULAR_QUESTIONS = 20;
 
-  function getSpeedHighScore() {
-    return parseInt(localStorage.getItem('arsitekCilik_speed_highscore') || '0', 10);
+  /* ========================================================
+     SISTEM REKOR TERBAIK UJIAN KILAT (KONSISTEN & ADIL):
+     1. Prioritas Utama: Jumlah Soal Benar terbanyak (0 - 25)
+     2. Prioritas Kedua: Waktu tempuh tercepat (Detik)
+     (Tidak memakai arbitrary point multiplier)
+     ======================================================== */
+  function getSpeedBestRecord() {
+    try {
+      const raw = localStorage.getItem('arsitekCilik_speed_record_v2');
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return null;
   }
 
-  function setSpeedHighScore(val) {
-    localStorage.setItem('arsitekCilik_speed_highscore', val.toString());
+  function setSpeedBestRecord(rec) {
+    try {
+      localStorage.setItem('arsitekCilik_speed_record_v2', JSON.stringify(rec));
+    } catch (e) {}
+  }
+
+  function isBetterRecord(newCorrect, newTime, oldRec) {
+    if (!oldRec || oldRec.correct === undefined || oldRec.correct === null) {
+      return newCorrect > 0;
+    }
+    // 1. Kriteria Pertama: Jumlah Soal yang Benar
+    if (newCorrect > oldRec.correct) return true;
+    // 2. Kriteria Kedua: Jika jumlah benar sama, yang tercepat (detik lebih sedikit)
+    if (newCorrect === oldRec.correct && newCorrect > 0) {
+      return newTime < oldRec.time;
+    }
+    return false;
+  }
+
+  function makeSpeedOptions(correct, distractors) {
+    const set = new Set([correct]);
+    for (let d of distractors) {
+      if (d !== correct) set.add(d);
+      if (set.size === 4) break;
+    }
+    // Fallback if less than 4
+    let dummy = 1;
+    while (set.size < 4) {
+      set.add(`${dummy++}`);
+    }
+    return Array.from(set).sort(() => Math.random() - 0.5);
   }
 
   function renderSpeedScreen() {
@@ -2145,6 +2444,11 @@
       clearInterval(speedTimerInterval);
       speedTimerInterval = null;
     }
+    if (speedQuestionTimeout) {
+      clearTimeout(speedQuestionTimeout);
+      speedQuestionTimeout = null;
+    }
+
     const startCard = $('speed-start-card');
     const gameCard = $('speed-game-card');
     const resultCard = $('speed-result-card');
@@ -2152,8 +2456,32 @@
     if (gameCard) gameCard.classList.add('hidden');
     if (resultCard) resultCard.classList.add('hidden');
 
-    const highScoreEl = $('speed-high-score');
-    if (highScoreEl) highScoreEl.textContent = `${getSpeedHighScore()} Poin`;
+    // Tampilkan rekor terbaik (Berdasarkan Soal Benar & Waktu Tercepat)
+    const rec = getSpeedBestRecord();
+    const recCorrectEl = $('speed-record-correct');
+    const recTimeEl = $('speed-record-time');
+    const recStatusEl = $('speed-record-status');
+
+    if (rec && rec.correct > 0) {
+      if (recCorrectEl) recCorrectEl.textContent = rec.correct;
+      if (recTimeEl) recTimeEl.textContent = `${rec.time}s`;
+      if (recStatusEl) {
+        if (rec.correct >= SPEED_TOTAL_QUESTIONS) {
+          recStatusEl.textContent = `🌟 Juara Sempurna: 25/25 Soal dalam ${rec.time} Detik! ⚡`;
+          recStatusEl.style.color = '#F59E0B';
+        } else {
+          recStatusEl.textContent = `🎯 Rekor: Berhasil ${rec.correct} Soal Benar (${rec.time} Detik)`;
+          recStatusEl.style.color = 'var(--color-primary-green)';
+        }
+      }
+    } else {
+      if (recCorrectEl) recCorrectEl.textContent = '0';
+      if (recTimeEl) recTimeEl.textContent = '-- s';
+      if (recStatusEl) {
+        recStatusEl.textContent = 'Belum ada rekor tersimpan. Ayo cetak rekor pertamamu!';
+        recStatusEl.style.color = 'var(--color-gray-500)';
+      }
+    }
 
     if (!speedInitialized) {
       speedInitialized = true;
@@ -2183,11 +2511,20 @@
 
   function startSpeedGame() {
     speedTimeRemaining = 60;
-    speedScore = 0;
     speedCombo = 1;
     speedMaxCombo = 1;
     speedCorrectCount = 0;
+    speedQuestionIndex = 0;
     speedAnsweringLocked = false;
+
+    if (speedTimerInterval) {
+      clearInterval(speedTimerInterval);
+      speedTimerInterval = null;
+    }
+    if (speedQuestionTimeout) {
+      clearTimeout(speedQuestionTimeout);
+      speedQuestionTimeout = null;
+    }
 
     const startCard = $('speed-start-card');
     const gameCard = $('speed-game-card');
@@ -2197,14 +2534,13 @@
     if (resultCard) resultCard.classList.add('hidden');
 
     updateSpeedStatus();
-    loadNextSpeedQuestion();
+    loadSpeedQuestion(speedQuestionIndex);
 
-    if (speedTimerInterval) clearInterval(speedTimerInterval);
     speedTimerInterval = setInterval(() => {
       speedTimeRemaining--;
       updateSpeedStatus();
       if (speedTimeRemaining <= 0) {
-        endSpeedGame();
+        endSpeedGame(false);
       }
     }, 1000);
   }
@@ -2219,8 +2555,8 @@
       timerFill.style.width = `${pct}%`;
     }
 
-    const scoreVal = $('speed-current-score');
-    if (scoreVal) scoreVal.textContent = speedScore;
+    const liveCorrect = $('speed-live-correct');
+    if (liveCorrect) liveCorrect.textContent = speedCorrectCount;
 
     const comboText = $('speed-combo-text');
     if (comboText) comboText.textContent = `Combo x${speedCombo}`;
@@ -2231,90 +2567,382 @@
     }
   }
 
-  function generateSpeedQuestion() {
-    const triple = SPEED_TRIPLES[Math.floor(Math.random() * SPEED_TRIPLES.length)];
-    const [a, b, c] = triple;
-    const qTypes = ['hypotenuse', 'leg', 'square', 'verify'];
-    const type = qTypes[Math.floor(Math.random() * qTypes.length)];
-
-    let category = 'Tripel Pythagoras';
+  function getSpeedQuestion(index) {
+    let category = '';
     let text = '';
     let correctAnswer = '';
-    let options = [];
+    let distractors = [];
     let svg = '';
 
-    if (type === 'hypotenuse') {
-      category = 'Mencari Sisi Miring (c)';
-      text = `Segitiga siku-siku memiliki sisi tegak ${a} cm dan alas ${b} cm. Berapa sisi miringnya?`;
-      correctAnswer = `${c} cm`;
-      const wrong1 = `${c + 1} cm`;
-      const wrong2 = `${c - 1 > 0 ? c - 1 : c + 2} cm`;
-      const wrong3 = `${a + b} cm`;
-      options = [correctAnswer, wrong1, wrong2, wrong3];
-      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
-        <polygon points="25,90 135,90 25,20" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
-        <rect x="25" y="78" width="12" height="12" fill="none" stroke="#1B6B4A" stroke-width="1.5"/>
-        <text x="14" y="60" font-size="12" font-weight="700" fill="#1B6B4A">${a}</text>
-        <text x="80" y="105" text-anchor="middle" font-size="12" font-weight="700" fill="#1B6B4A">${b}</text>
-        <text x="88" y="50" font-size="14" font-weight="800" fill="#D94F3B">c = ?</text>
-      </svg>`;
-    } else if (type === 'leg') {
-      category = 'Mencari Sisi Tegak';
-      text = `Sisi miring segitiga siku-siku adalah ${c} cm dan alasnya ${b} cm. Berapa panjang sisi tegaknya?`;
-      correctAnswer = `${a} cm`;
-      const wrong1 = `${a + 2} cm`;
-      const wrong2 = `${a - 1 > 0 ? a - 1 : a + 3} cm`;
-      const wrong3 = `${Math.abs(c - b)} cm`;
-      options = [correctAnswer, wrong1, wrong2, wrong3];
-      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
-        <polygon points="25,90 135,90 25,20" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
-        <rect x="25" y="78" width="12" height="12" fill="none" stroke="#E8A838" stroke-width="1.5"/>
-        <text x="12" y="60" font-size="13" font-weight="800" fill="#D94F3B">? cm</text>
-        <text x="80" y="105" text-anchor="middle" font-size="12" font-weight="700" fill="#7D6608">${b}</text>
-        <text x="88" y="50" font-size="13" font-weight="700" fill="#2980B9">${c}</text>
-      </svg>`;
-    } else if (type === 'square') {
-      category = 'Kuadrat Sisi Miring (c²)';
-      text = `Jika alas ${a} cm dan sisi tegak ${b} cm, berapa nilai dari c² (a² + b²)?`;
-      correctAnswer = `${c * c}`;
-      const wrong1 = `${c * c + 10}`;
-      const wrong2 = `${a * a + b}`;
-      const wrong3 = `${c * 2}`;
-      options = [correctAnswer, wrong1, wrong2, wrong3];
-      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
-        <polygon points="25,90 135,90 25,20" fill="#EBF5FB" stroke="#2980B9" stroke-width="2.5"/>
-        <text x="80" y="60" text-anchor="middle" font-size="14" font-weight="800" fill="#1B4F72">c² = ?</text>
-        <text x="14" y="60" font-size="12" font-weight="700" fill="#2980B9">${a}</text>
-        <text x="80" y="105" text-anchor="middle" font-size="12" font-weight="700" fill="#2980B9">${b}</text>
-      </svg>`;
-    } else {
-      category = 'Verifikasi Tripel';
-      const isRight = Math.random() > 0.5;
-      const fakeC = isRight ? c : c + 2;
-      text = `Apakah kelompok bilangan [${a}, ${b}, ${fakeC}] merupakan Tripel Pythagoras?`;
-      correctAnswer = isRight ? 'Ya, Tripel Pythagoras' : 'Bukan Tripel';
-      const wrong1 = isRight ? 'Bukan Tripel' : 'Ya, Tripel Pythagoras';
-      const wrong2 = 'Segitiga Tumpul';
-      const wrong3 = 'Segitiga Sama Sisi';
-      options = [correctAnswer, wrong1, wrong2, wrong3];
-      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
-        <polygon points="30,85 130,85 45,25" fill="#FDEDEC" stroke="#E74C3C" stroke-width="2.5"/>
-        <text x="80" y="60" text-anchor="middle" font-size="13" font-weight="800" fill="#922B21">${a}, ${b}, ${fakeC}</text>
-      </svg>`;
+    switch (index) {
+      // ===== LEVEL 1: PEMANASAN & TRIPEL 3-4-5 (SOAL 1 - 5) =====
+      case 0:
+        category = 'Tingkat 1: Pemanasan Kuadrat';
+        text = 'Berapakah hasil penjumlahan kuadrat: 3² + 4² ?';
+        correctAnswer = '25';
+        distractors = ['14', '49', '12', '7'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <rect x="25" y="45" width="30" height="30" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2"/>
+          <text x="40" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#1B6B4A">3²=9</text>
+          <rect x="60" y="35" width="40" height="40" fill="#FEF9E7" stroke="#E8A838" stroke-width="2"/>
+          <text x="80" y="60" text-anchor="middle" font-size="11" font-weight="700" fill="#B7791F">4²=16</text>
+          <text x="120" y="60" text-anchor="middle" font-size="14" font-weight="800" fill="#D94F3B">?²</text>
+        </svg>`;
+        break;
+
+      case 1:
+        category = 'Tingkat 1: Tripel Dasar 3 - 4 - 5';
+        text = 'Segitiga siku-siku memiliki alas 3 cm dan tinggi 4 cm. Berapakah sisi miringnya (c)?';
+        correctAnswer = '5 cm';
+        distractors = ['7 cm', '6 cm', '25 cm', '8 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 125,80 25,20" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
+          <rect x="25" y="68" width="12" height="12" fill="none" stroke="#1B6B4A" stroke-width="1.5"/>
+          <text x="14" y="55" font-size="12" font-weight="700" fill="#1B6B4A">4</text>
+          <text x="75" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#1B6B4A">3</text>
+          <text x="85" y="45" font-size="13" font-weight="800" fill="#D94F3B">c = ?</text>
+        </svg>`;
+        break;
+
+      case 2:
+        category = 'Tingkat 1: Akar Kuadrat Dasar';
+        text = 'Berapakah nilai dari √100 ?';
+        correctAnswer = '10';
+        distractors = ['20', '50', '5', '25'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <rect x="50" y="15" width="60" height="60" fill="#EBF5FB" stroke="#2980B9" stroke-width="2.5" rx="3"/>
+          <text x="80" y="50" text-anchor="middle" font-size="13" font-weight="800" fill="#1B4F72">Luas = 100</text>
+          <text x="80" y="90" text-anchor="middle" font-size="12" font-weight="700" fill="#2980B9">sisi (√100) = ?</text>
+        </svg>`;
+        break;
+
+      case 3:
+        category = 'Tingkat 1: Tripel Pythagoras Dasar';
+        text = 'Manakah dari tiga bilangan berikut yang membentuk Tripel Pythagoras siku-siku?';
+        correctAnswer = '3, 4, 5';
+        distractors = ['2, 3, 4', '4, 5, 6', '1, 2, 3', '5, 6, 7'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <circle cx="45" cy="50" r="18" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2"/>
+          <text x="45" y="55" text-anchor="middle" font-size="14" font-weight="800" fill="#1B6B4A">3</text>
+          <circle cx="80" cy="50" r="18" fill="#FEF9E7" stroke="#E8A838" stroke-width="2"/>
+          <text x="80" y="55" text-anchor="middle" font-size="14" font-weight="800" fill="#B7791F">4</text>
+          <circle cx="115" cy="50" r="18" fill="#FADBD8" stroke="#D94F3B" stroke-width="2"/>
+          <text x="115" y="55" text-anchor="middle" font-size="14" font-weight="800" fill="#D94F3B">5</text>
+        </svg>`;
+        break;
+
+      case 4:
+        category = 'Tingkat 1: Kelipatan Tripel 3 - 4 - 5';
+        text = 'Sisi siku-siku segitiga adalah 6 cm dan 8 cm (kelipatan 2). Berapakah sisi miringnya?';
+        correctAnswer = '10 cm';
+        distractors = ['14 cm', '12 cm', '48 cm', '9 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
+          <rect x="25" y="68" width="12" height="12" fill="none" stroke="#E8A838" stroke-width="1.5"/>
+          <text x="14" y="55" font-size="12" font-weight="700" fill="#7D6608">8</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#7D6608">6</text>
+          <text x="90" y="45" font-size="13" font-weight="800" fill="#2980B9">c = ?</text>
+        </svg>`;
+        break;
+
+      // ===== LEVEL 2: SISI SIKU-SIKU & TRIPEL 5-12-13 (SOAL 6 - 10) =====
+      case 5:
+        category = 'Tingkat 2: Mencari Sisi Siku-Siku';
+        text = 'Sisi miring segitiga adalah 10 cm dan alasnya 6 cm. Berapakah panjang sisi tegaknya?';
+        correctAnswer = '8 cm';
+        distractors = ['4 cm', '16 cm', '7 cm', '14 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#EBF5FB" stroke="#2980B9" stroke-width="2.5"/>
+          <text x="12" y="55" font-size="13" font-weight="800" fill="#D94F3B">? cm</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#1B4F72">6 cm</text>
+          <text x="90" y="45" font-size="12" font-weight="700" fill="#2980B9">10 cm</text>
+        </svg>`;
+        break;
+
+      case 6:
+        category = 'Tingkat 2: Tripel Populer 5 - 12 - 13';
+        text = 'Jika panjang dua sisi siku-siku adalah 5 cm dan 12 cm, berapakah sisi miringnya?';
+        correctAnswer = '13 cm';
+        distractors = ['17 cm', '15 cm', '60 cm', '14 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="20,80 140,80 20,35" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
+          <text x="12" y="60" font-size="11" font-weight="700" fill="#1B6B4A">5</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#1B6B4A">12</text>
+          <text x="88" y="50" font-size="13" font-weight="800" fill="#D94F3B">c = ?</text>
+        </svg>`;
+        break;
+
+      case 7:
+        category = 'Tingkat 2: Luas Segitiga Siku-Siku';
+        text = 'Berapakah luas segitiga siku-siku dengan alas 6 cm dan tinggi 8 cm?';
+        correctAnswer = '24 cm²';
+        distractors = ['48 cm²', '14 cm²', '28 cm²', '30 cm²'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
+          <text x="80" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#7D6608">Luas = ½ × a × t</text>
+          <text x="80" y="95" text-anchor="middle" font-size="11" font-weight="700" fill="#7D6608">a = 6</text>
+          <text x="14" y="55" font-size="11" font-weight="700" fill="#7D6608">t = 8</text>
+        </svg>`;
+        break;
+
+      case 8:
+        category = 'Tingkat 2: Keliling Segitiga';
+        text = 'Berapakah keliling segitiga siku-siku dengan sisi 3 cm, 4 cm, dan 5 cm?';
+        correctAnswer = '12 cm';
+        distractors = ['60 cm', '7 cm', '20 cm', '15 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 125,80 25,25" fill="#FDEDEC" stroke="#E74C3C" stroke-width="2.5"/>
+          <text x="75" y="95" text-anchor="middle" font-size="11" font-weight="700" fill="#922B21">3</text>
+          <text x="14" y="55" font-size="11" font-weight="700" fill="#922B21">4</text>
+          <text x="85" y="45" font-size="11" font-weight="700" fill="#922B21">5</text>
+        </svg>`;
+        break;
+
+      case 9:
+        category = 'Tingkat 2: Teori Geometri SMP';
+        text = 'Pada segitiga siku-siku, sisi terpanjang (hipotenusa) selalu menghadap sudut apa?';
+        correctAnswer = 'Sudut Siku-siku (90°)';
+        distractors = ['Sudut Lancip (<90°)', 'Sudut Tumpul (>90°)', 'Sudut Lurus (180°)', 'Sudut Refleks'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="30,80 130,80 30,25" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
+          <rect x="30" y="68" width="12" height="12" fill="#F1C40F" stroke="#1B6B4A" stroke-width="1.5"/>
+          <path d="M 36 74 L 100 45" stroke="#D94F3B" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="95" y="40" font-size="11" font-weight="800" fill="#D94F3B">Hipotenusa</text>
+        </svg>`;
+        break;
+
+      // ===== LEVEL 3: TRIPEL LANJUTAN & UJI SEGITIGA (SOAL 11 - 15) =====
+      case 10:
+        category = 'Tingkat 3: Tripel 8 - 15 - 17';
+        text = 'Berapakah sisi miring segitiga siku-siku dengan sisi siku-siku 8 cm dan 15 cm?';
+        correctAnswer = '17 cm';
+        distractors = ['23 cm', '19 cm', '16 cm', '21 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="20,80 140,80 20,30" fill="#F4ECF7" stroke="#8E44AD" stroke-width="2.5"/>
+          <text x="12" y="58" font-size="11" font-weight="700" fill="#8E44AD">8</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#8E44AD">15</text>
+          <text x="88" y="48" font-size="13" font-weight="800" fill="#D94F3B">c = ?</text>
+        </svg>`;
+        break;
+
+      case 11:
+        category = 'Tingkat 3: Pengurangan Kuadrat';
+        text = 'Sisi miring adalah 13 cm dan sisi tegak 12 cm. Berapakah panjang sisi alasnya?';
+        correctAnswer = '5 cm';
+        distractors = ['1 cm', '25 cm', '7 cm', '6 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
+          <text x="14" y="55" font-size="12" font-weight="700" fill="#1B6B4A">12</text>
+          <text x="90" y="45" font-size="12" font-weight="700" fill="#1B6B4A">13</text>
+          <text x="80" y="95" text-anchor="middle" font-size="13" font-weight="800" fill="#D94F3B">alas = ?</text>
+        </svg>`;
+        break;
+
+      case 12:
+        category = 'Tingkat 3: Kebalikan Teorema';
+        text = 'Segitiga dengan sisi 5 cm, 6 cm, 7 cm. Karena 5² + 6² = 61 > 7² (49), segitiga ini berjenis:';
+        correctAnswer = 'Segitiga Lancip';
+        distractors = ['Segitiga Siku-siku', 'Segitiga Tumpul', 'Bukan Segitiga', 'Segitiga Sama Sisi'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="30,80 130,80 75,25" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
+          <text x="80" y="55" text-anchor="middle" font-size="11" font-weight="800" fill="#7D6608">a² + b² > c²</text>
+          <text x="80" y="95" text-anchor="middle" font-size="10" font-weight="700" fill="#7D6608">5, 6, 7</text>
+        </svg>`;
+        break;
+
+      case 13:
+        category = 'Tingkat 3: Tripel 7 - 24 - 25';
+        text = 'Sisi miring segitiga adalah 25 cm dan sisi tegak 24 cm. Berapakah panjang alasnya?';
+        correctAnswer = '7 cm';
+        distractors = ['1 cm', '9 cm', '11 cm', '8 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="20,80 140,80 20,25" fill="#EBF5FB" stroke="#2980B9" stroke-width="2.5"/>
+          <text x="12" y="55" font-size="11" font-weight="700" fill="#1B4F72">24</text>
+          <text x="85" y="45" font-size="12" font-weight="700" fill="#1B4F72">25</text>
+          <text x="80" y="95" text-anchor="middle" font-size="13" font-weight="800" fill="#D94F3B">alas = ?</text>
+        </svg>`;
+        break;
+
+      case 14:
+        category = 'Tingkat 3: Kelipatan 3 dari 3-4-5';
+        text = 'Sisi siku-siku segitiga adalah 9 cm dan 12 cm. Berapakah sisi miringnya?';
+        correctAnswer = '15 cm';
+        distractors = ['21 cm', '18 cm', '13 cm', '16 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
+          <text x="14" y="55" font-size="12" font-weight="700" fill="#7D6608">12</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#7D6608">9</text>
+          <text x="90" y="45" font-size="13" font-weight="800" fill="#D94F3B">c = ?</text>
+        </svg>`;
+        break;
+
+      // ===== LEVEL 4: APLIKASI ARSITEKTUR & SOAL CERITA SMP (SOAL 16 - 20) =====
+      case 15:
+        category = 'Tingkat 4: Soal Cerita Tangga Gedung';
+        text = 'Tangga sepanjang 5 m bersandar di dinding. Jarak kaki tangga ke dinding 3 m. Tinggi dinding yang dicapai tangga?';
+        correctAnswer = '4 meter';
+        distractors = ['2 meter', '8 meter', '3.5 meter', '4.5 meter'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <rect x="25" y="10" width="15" height="75" fill="#BDC3C7" stroke="#7F8C8D" stroke-width="1.5"/>
+          <line x1="25" y1="85" x2="140" y2="85" stroke="#795548" stroke-width="2"/>
+          <line x1="40" y1="25" x2="105" y2="85" stroke="#E67E22" stroke-width="4"/>
+          <text x="80" y="50" font-size="11" font-weight="800" fill="#D35400">5 m</text>
+          <text x="70" y="98" font-size="11" font-weight="700" fill="#333">3 m</text>
+          <text x="8" y="55" font-size="12" font-weight="800" fill="#C0392B">t = ?</text>
+        </svg>`;
+        break;
+
+      case 16:
+        category = 'Tingkat 4: Diagonal Lantai Ruangan';
+        text = 'Lantai aula arsitek berukuran 6 m × 8 m. Berapakah panjang diagonal lantai tersebut?';
+        correctAnswer = '10 meter';
+        distractors = ['14 meter', '48 meter', '12 meter', '9 meter'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <rect x="25" y="25" width="110" height="50" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2"/>
+          <line x1="25" y1="25" x2="135" y2="75" stroke="#E74C3C" stroke-width="2" stroke-dasharray="4,4"/>
+          <text x="80" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#1B6B4A">8 m</text>
+          <text x="145" y="55" font-size="11" font-weight="700" fill="#1B6B4A">6 m</text>
+          <text x="75" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#C0392B">d = ?</text>
+        </svg>`;
+        break;
+
+      case 17:
+        category = 'Tingkat 4: Kawat Tiang Antena';
+        text = 'Tiang antena setinggi 12 m dipasangi kawat pancang ke tanah berjarak 5 m dari tiang. Panjang kawat penopang?';
+        correctAnswer = '13 meter';
+        distractors = ['17 meter', '60 meter', '15 meter', '11 meter'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <line x1="40" y1="15" x2="40" y2="85" stroke="#34495E" stroke-width="3"/>
+          <line x1="30" y1="85" x2="130" y2="85" stroke="#795548" stroke-width="2"/>
+          <line x1="40" y1="15" x2="110" y2="85" stroke="#2980B9" stroke-width="2.5"/>
+          <text x="18" y="50" font-size="11" font-weight="700" fill="#34495E">12 m</text>
+          <text x="75" y="98" font-size="11" font-weight="700" fill="#333">5 m</text>
+          <text x="85" y="45" font-size="12" font-weight="800" fill="#2980B9">kawat = ?</text>
+        </svg>`;
+        break;
+
+      case 18:
+        category = 'Tingkat 4: Jarak Jalur Kapal';
+        text = 'Kapal pengangkut semen berlayar ke utara sejauh 12 km, lalu ke timur 9 km. Jarak terdekat kapal dari pelabuhan?';
+        correctAnswer = '15 km';
+        distractors = ['21 km', '16 km', '18 km', '14 km'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <circle cx="35" cy="80" r="5" fill="#27AE60"/>
+          <line x1="35" y1="80" x2="35" y2="25" stroke="#333" stroke-width="2" stroke-dasharray="3,3"/>
+          <line x1="35" y1="25" x2="120" y2="25" stroke="#333" stroke-width="2" stroke-dasharray="3,3"/>
+          <line x1="35" y1="80" x2="120" y2="25" stroke="#E74C3C" stroke-width="2.5"/>
+          <text x="16" y="55" font-size="11" font-weight="700" fill="#333">12 km</text>
+          <text x="78" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#333">9 km</text>
+          <text x="85" y="60" font-size="12" font-weight="800" fill="#C0392B">jarak = ?</text>
+        </svg>`;
+        break;
+
+      case 19:
+        category = 'Tingkat 4: Rangka Atap Kasau';
+        text = 'Rangka atap rumah memiliki tinggi 8 m dan alas miring 15 m. Berapakah panjang balok kayu kasau miringnya?';
+        correctAnswer = '17 meter';
+        distractors = ['23 meter', '19 meter', '25 meter', '12 meter'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="20,80 140,80 80,25" fill="#FEF9E7" stroke="#E8A838" stroke-width="2"/>
+          <line x1="80" y1="25" x2="80" y2="80" stroke="#D94F3B" stroke-width="2" stroke-dasharray="3,3"/>
+          <text x="88" y="55" font-size="11" font-weight="700" fill="#D94F3B">t = 8 m</text>
+          <text x="110" y="95" font-size="11" font-weight="700" fill="#7D6608">15 m</text>
+          <text x="120" y="50" font-size="12" font-weight="800" fill="#27AE60">kasau = ?</text>
+        </svg>`;
+        break;
+
+      // ===== LEVEL 5: SUPER SPEED BONUS (SOAL 21 - 25 MENUJU REKOR WAKTU!) =====
+      case 20:
+        category = '⚡ BONUS 1: Kelipatan 5-12-13 (x2)';
+        text = 'Sisi siku-siku segitiga adalah 10 cm dan 24 cm. Berapakah panjang sisi miringnya?';
+        correctAnswer = '26 cm';
+        distractors = ['34 cm', '28 cm', '25 cm', '30 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="20,80 140,80 20,30" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
+          <text x="12" y="58" font-size="11" font-weight="700" fill="#1B6B4A">10</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#1B6B4A">24</text>
+          <text x="88" y="48" font-size="13" font-weight="800" fill="#D94F3B">c = ?</text>
+        </svg>`;
+        break;
+
+      case 21:
+        category = '⚡ BONUS 2: Kabel Menara 9 - 40 - 41';
+        text = 'Menara pengawas setinggi 40 m ditopang kabel baja ke tanah sejauh 9 m. Berapa panjang kabel penopang?';
+        correctAnswer = '41 meter';
+        distractors = ['49 meter', '31 meter', '45 meter', '50 meter'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <line x1="30" y1="15" x2="30" y2="85" stroke="#34495E" stroke-width="3"/>
+          <line x1="30" y1="15" x2="130" y2="85" stroke="#F39C12" stroke-width="2.5"/>
+          <text x="12" y="55" font-size="11" font-weight="700" fill="#34495E">40 m</text>
+          <text x="80" y="98" font-size="11" font-weight="700" fill="#333">9 m</text>
+          <text x="85" y="45" font-size="12" font-weight="800" fill="#E67E22">kabel = ?</text>
+        </svg>`;
+        break;
+
+      case 22:
+        category = '⚡ BONUS 3: Kelipatan 3-4-5 (x5)';
+        text = 'Sisi siku-siku segitiga adalah 15 cm dan 20 cm (kelipatan 5). Berapakah sisi miringnya?';
+        correctAnswer = '25 cm';
+        distractors = ['35 cm', '30 cm', '28 cm', '22 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
+          <text x="12" y="55" font-size="11" font-weight="700" fill="#7D6608">15</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#7D6608">20</text>
+          <text x="90" y="45" font-size="13" font-weight="800" fill="#2980B9">c = ?</text>
+        </svg>`;
+        break;
+
+      case 23:
+        category = '⚡ BONUS 4: Kuadrat Diagonal Persegi';
+        text = 'Taman persegi memiliki panjang sisi 7 m. Berapakah nilai kuadrat diagonalnya (d² = 7² + 7²)?';
+        correctAnswer = '98 m²';
+        distractors = ['49 m²', '14 m²', '196 m²', '100 m²'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <rect x="50" y="20" width="55" height="55" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2"/>
+          <line x1="50" y1="20" x2="105" y2="75" stroke="#E74C3C" stroke-width="2" stroke-dasharray="3,3"/>
+          <text x="77" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="#1B6B4A">7 m</text>
+          <text x="77" y="52" text-anchor="middle" font-size="11" font-weight="800" fill="#C0392B">d² = ?</text>
+        </svg>`;
+        break;
+
+      case 24:
+      default:
+        category = '🏆 SOAL PAMUNGKAS KE-25: REKOR WAKTU!';
+        text = 'Sisi miring segitiga adalah 20 cm dan alasnya 16 cm. Berapakah panjang sisi tegaknya?';
+        correctAnswer = '12 cm';
+        distractors = ['4 cm', '36 cm', '14 cm', '8 cm'];
+        svg = `<svg viewBox="0 0 160 100" width="140" height="90">
+          <polygon points="25,80 135,80 25,20" fill="#FDEDEC" stroke="#E74C3C" stroke-width="3"/>
+          <text x="90" y="45" font-size="12" font-weight="800" fill="#E74C3C">c = 20 cm</text>
+          <text x="80" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#1B4F72">16 cm</text>
+          <text x="12" y="55" font-size="13" font-weight="800" fill="#27AE60">t = ?</text>
+        </svg>`;
+        break;
     }
 
-    options = options.sort(() => Math.random() - 0.5);
-
+    const options = makeSpeedOptions(correctAnswer, distractors);
     return { category, text, correctAnswer, options, svg };
   }
 
-  function loadNextSpeedQuestion() {
+  function loadSpeedQuestion(idx) {
     if (speedTimeRemaining <= 0) return;
     speedAnsweringLocked = false;
-    const q = generateSpeedQuestion();
+
+    const q = getSpeedQuestion(idx);
 
     const catEl = $('speed-q-category');
     if (catEl) catEl.textContent = q.category;
+
+    const progEl = $('speed-q-progress');
+    if (progEl) {
+      if (idx < SPEED_REGULAR_QUESTIONS) {
+        progEl.textContent = `Soal ${idx + 1} / ${SPEED_REGULAR_QUESTIONS}`;
+        progEl.classList.remove('bonus');
+      } else {
+        progEl.textContent = `Soal ${idx + 1} / ${SPEED_TOTAL_QUESTIONS} ⚡ BONUS SPEED RUN!`;
+        progEl.classList.add('bonus');
+      }
+    }
 
     const textEl = $('speed-question-text');
     if (textEl) textEl.textContent = q.text;
@@ -2331,21 +2959,17 @@
       btn.className = 'speed-btn-option';
       btn.textContent = opt;
       btn.addEventListener('click', () => {
-        if (speedAnsweringLocked) return;
+        if (speedAnsweringLocked || speedTimeRemaining <= 0) return;
         speedAnsweringLocked = true;
 
-        if (opt === q.correctAnswer) {
+        const isCorrect = (opt === q.correctAnswer);
+        if (isCorrect) {
           btn.classList.add('correct');
           GameAudio.correct();
-          const gained = 100 * speedCombo;
-          speedScore += gained;
           speedCorrectCount++;
           speedCombo++;
           if (speedCombo > speedMaxCombo) speedMaxCombo = speedCombo;
           updateSpeedStatus();
-          setTimeout(() => {
-            loadNextSpeedQuestion();
-          }, 200);
         } else {
           btn.classList.add('wrong');
           grid.querySelectorAll('.speed-btn-option').forEach(b => {
@@ -2354,19 +2978,38 @@
           GameAudio.wrong();
           speedCombo = 1;
           updateSpeedStatus();
-          setTimeout(() => {
-            loadNextSpeedQuestion();
-          }, 450);
         }
+
+        speedQuestionIndex++;
+
+        // Cek jika sudah menjawab hingga soal ke-25 (Selesai sebelum 60 detik!)
+        if (speedQuestionIndex >= SPEED_TOTAL_QUESTIONS) {
+          speedQuestionTimeout = setTimeout(() => {
+            endSpeedGame(true);
+          }, 250);
+          return;
+        }
+
+        // Lanjut ke soal berikutnya
+        const delay = isCorrect ? 200 : 450;
+        speedQuestionTimeout = setTimeout(() => {
+          if (speedTimeRemaining > 0) {
+            loadSpeedQuestion(speedQuestionIndex);
+          }
+        }, delay);
       });
       grid.appendChild(btn);
     });
   }
 
-  function endSpeedGame() {
+  function endSpeedGame(completedAll25 = false) {
     if (speedTimerInterval) {
       clearInterval(speedTimerInterval);
       speedTimerInterval = null;
+    }
+    if (speedQuestionTimeout) {
+      clearTimeout(speedQuestionTimeout);
+      speedQuestionTimeout = null;
     }
 
     const gameCard = $('speed-game-card');
@@ -2376,31 +3019,84 @@
 
     GameAudio.fanfare();
 
-    const statScore = $('speed-stat-score'); if (statScore) statScore.textContent = speedScore;
-    const statCorrect = $('speed-stat-correct'); if (statCorrect) statCorrect.textContent = speedCorrectCount;
-    const statCombo = $('speed-stat-combo'); if (statCombo) statCombo.textContent = `x${speedMaxCombo}`;
+    // Waktu tempuh (detik): jika tamat 25 soal dihitung waktu pemakaiannya, jika waktu habis = 60 detik
+    const finishTime = completedAll25 ? Math.max(1, 60 - speedTimeRemaining) : (60 - speedTimeRemaining);
+
+    const titleEl = $('speed-result-title');
+    const bannerEl = $('speed-time-record-banner');
+    const finishTimeEl = $('speed-finish-time');
+    const newHighNotice = $('speed-new-high');
+
+    const statCorrect = $('speed-stat-correct');
+    if (statCorrect) statCorrect.textContent = `${speedCorrectCount} / 25`;
+
+    const statTime = $('speed-stat-time');
+    if (statTime) statTime.textContent = `${finishTime}s`;
+
+    const statCombo = $('speed-stat-combo');
+    if (statCombo) statCombo.textContent = `x${speedMaxCombo}`;
 
     const tierBadge = $('speed-tier-badge');
+    const mascotEl = $('speed-result-mascot');
+
     if (tierBadge) {
-      if (speedScore >= 1000) tierBadge.textContent = '🌟 Grand Master Pythagoras';
-      else if (speedScore >= 600) tierBadge.textContent = '🏆 Insinyur Legendaris';
-      else if (speedScore >= 350) tierBadge.textContent = '📐 Arsitek Mahir';
-      else if (speedScore >= 150) tierBadge.textContent = '🔨 Arsitek Muda';
-      else tierBadge.textContent = '👷 Calon Arsitek';
+      if (completedAll25) tierBadge.textContent = '🌟 Legenda Kilat Geometri';
+      else if (speedCorrectCount >= 20) tierBadge.textContent = '🏆 Insinyur Ahli Pythagoras';
+      else if (speedCorrectCount >= 15) tierBadge.textContent = '📐 Arsitek Mahir';
+      else if (speedCorrectCount >= 10) tierBadge.textContent = '🔨 Arsitek Muda';
+      else if (speedCorrectCount >= 5) tierBadge.textContent = '👷 Asisten Arsitek';
+      else tierBadge.textContent = '🌱 Murid Magang';
     }
 
-    const mascotEl = $('speed-result-mascot');
-    if (mascotEl) mascotEl.innerHTML = GameEngine.getMascotSVG(speedScore >= 350 ? 'happy' : 'normal', 80);
+    if (mascotEl) {
+      mascotEl.innerHTML = GameEngine.getMascotSVG(speedCorrectCount >= 15 ? 'excited' : (speedCorrectCount >= 8 ? 'happy' : 'normal'), 80);
+    }
 
-    const prevHigh = getSpeedHighScore();
-    const newHighNotice = $('speed-new-high');
-    if (speedScore > prevHigh) {
-      setSpeedHighScore(speedScore);
-      if (newHighNotice) newHighNotice.classList.remove('hidden');
-      GameEngine.startConfetti();
-      setTimeout(() => GameEngine.stopConfetti(), 3500);
+    // Rekor: Kriteria 1 = Jumlah Soal Benar, Kriteria 2 = Waktu Tercepat
+    const oldRec = getSpeedBestRecord();
+    const isNew = isBetterRecord(speedCorrectCount, finishTime, oldRec);
+
+    if (completedAll25) {
+      if (titleEl) titleEl.textContent = '🎉 TAMAT 25 SOAL! ⚡';
+      if (bannerEl) bannerEl.classList.remove('hidden');
+      if (finishTimeEl) finishTimeEl.textContent = `${finishTime} Detik`;
+
+      if (isNew) {
+        setSpeedBestRecord({ correct: 25, time: finishTime, date: new Date().toLocaleDateString('id-ID') });
+        if (newHighNotice) {
+          newHighNotice.classList.remove('hidden');
+          newHighNotice.innerHTML = `⚡ <strong>REKOR WAKTU TERCEPAT BARU!</strong><br>Selesai 25 soal sempurna dalam <strong>${finishTime} Detik</strong>! 🏆`;
+        }
+        GameEngine.startConfetti();
+        setTimeout(() => GameEngine.stopConfetti(), 4000);
+      } else {
+        if (newHighNotice) {
+          newHighNotice.classList.remove('hidden');
+          newHighNotice.innerHTML = `Hebat! Waktu tempuh: <strong>${finishTime}s</strong> (Rekor Terbaikmu: <strong>${oldRec.time}s</strong>)`;
+        }
+      }
     } else {
-      if (newHighNotice) newHighNotice.classList.add('hidden');
+      if (titleEl) titleEl.textContent = 'Waktu Habis! 🔔';
+      if (bannerEl) bannerEl.classList.add('hidden');
+
+      if (isNew) {
+        setSpeedBestRecord({ correct: speedCorrectCount, time: finishTime, date: new Date().toLocaleDateString('id-ID') });
+        if (newHighNotice) {
+          newHighNotice.classList.remove('hidden');
+          newHighNotice.innerHTML = `🎉 <strong>REKOR TERBAIK BARU!</strong><br>Berhasil <strong>${speedCorrectCount} Soal Benar</strong> dalam waktu <strong>${finishTime} Detik</strong>!`;
+        }
+        GameEngine.startConfetti();
+        setTimeout(() => GameEngine.stopConfetti(), 3500);
+      } else {
+        if (newHighNotice) {
+          if (oldRec && oldRec.correct > 0) {
+            newHighNotice.classList.remove('hidden');
+            newHighNotice.innerHTML = `Rekor Terbaikmu: <strong>${oldRec.correct} Soal Benar (${oldRec.time}s)</strong>`;
+          } else {
+            newHighNotice.classList.add('hidden');
+          }
+        }
+      }
     }
   }
 
