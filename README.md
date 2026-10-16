@@ -40,7 +40,7 @@ Jika ingin menjalankan melalui local development server:
 
 Pemain berperan sebagai **Arsitek Muda Adi** yang bertugas merehabilitasi bangunan tradisional khas Aceh (*Rumoh Panggung*, atap pelana/trapesium, tangga pasak, dan perahu layar). Pemain menerapkan rumus-rumus geometri secara kontekstual untuk memastikan konstruksi kokoh dan akurat.
 
-### Struktur 3 Dunia & 15 Level
+### Struktur 5 Dunia & 25 Level
 1. **Dunia 1: "Fondasi" (Level 1-1 s.d. 1-5)**
    - Fokus: Keliling dan Luas Persegi, Persegi Panjang, serta Segitiga.
    - Puncak: Mini-Boss Tantangan Fondasi Terpadu (3 Soal berturut-turut, 3 Nyawa).
@@ -49,12 +49,22 @@ Pemain berperan sebagai **Arsitek Muda Adi** yang bertugas merehabilitasi bangun
    - Puncak: Mini-Boss Rekonstruksi Atap & Dinding Gabungan.
 3. **Dunia 3: "Jembatan & Tangga" (Level 3-1 s.d. 3-5)**
    - Fokus: Teorema Pythagoras ($a^2 + b^2 = c^2$), Mencari Sisi Miring/Tegak, Pembuktian Visual Luas Persegi 3-4-5, Tripel Pythagoras, dan Soal Kontekstual Nyata.
-   - Puncak: Grand Boss Pythagoras Master (Arsitektur Rumoh & Perahu Aceh).
+   - Puncak: Grand Boss Pythagoras Master (Arsitektur Derek & Kawat Penopang).
+4. **Dunia 4: "Taman & Kolam" (Level 4-1 s.d. 4-5)**
+   - Fokus: Geometri Lingkaran (Keliling, Luas, Jari-jari & Diameter, Busur & Juring, Kombinasi Taman & Kolam).
+   - Puncak: Mini-Boss Desain Lanskap Terpadu.
+5. **Dunia 5: "Gudang & Menara" (Level 5-1 s.d. 5-5)**
+   - Fokus: Geometri Bangun Ruang Sisi Datar (Kubus, Balok, Prisma Segitiga, Limas Persegi, Volume & Luas Permukaan).
+   - Puncak: Grand Master Finale: Konstruksi Menara & Gudang Pusat.
 
 ---
 
 ## ✨ Fitur Unggulan
 
+- **Mode Petualangan Utama (5 Dunia & 25 Level Bertingkat)**: Menjelajahi tantangan terstruktur dengan storyline inspiratif Arsitek Adi.
+- **🔬 Studio Laboratorium Geometri (*Interactive Sandbox*)**: Mode manipulasi bebas di mana siswa dapat mengubah ukuran sisi segitiga siku-siku sembarang secara real-time dan menyaksikan pembuktian visual dinamis Teorema Pythagoras ($a^2 + b^2 = c^2$) serta eksplorasi bangun datar tanpa batas waktu.
+- **⚡ Ujian Kilat: Tripel Pythagoras (*Time-Attack 60 Detik*)**: Mode latihan kelancaran numerasi dengan timer, sistem skor kombo beruntun (*streak combo*), dan pencatatan rekor tertinggi.
+- **🗣️ Narasi Suara Aksesibel (*Web Speech API*)**: Tombol pembaca suara otomatis dalam Bahasa Indonesia untuk membantu siswa dengan gaya belajar auditori memahami soal secara mandiri (100% offline & zero-dependency).
 - **4 Tipe Interaksi Soal**:
   1. *Interactive Slider*: Menggeser ukuran bangun secara real-time hingga luas/keliling tepat.
   2. *Numerik Input Terbimbing*: Mengisi angka dengan keyboard responsif, toleransi desimal, dan sanitasi input.
@@ -64,7 +74,7 @@ Pemain berperan sebagai **Arsitek Muda Adi** yang bertugas merehabilitasi bangun
 - **Sistem Petunjuk Bertahap (3 Tingkat Hint)**: Membimbing siswa tanpa langsung memberikan jawaban, dengan penyesuaian skor yang adil.
 - **Prosedural Audio Synthesizer (Web Audio API)**: Efek suara (klik, benar, salah, bintang, fanfare) dihasilkan langsung oleh osilator audio browser tanpa memerlukan unduhan aset MP3/WAV.
 - **Canvas Particle Confetti**: Efek animasi selebrasi yang memicu motivasi belajar intrinsik.
-- **Penyimpanan Progres Lokal (`localStorage`)**: Progres level, bintang, dan perolehan skor tersimpan aman di browser siswa.
+- **Penyimpanan Progres Lokal (`localStorage`)**: Progres level, bintang, skor tantangan kilat, dan pengaturan tersimpan aman di browser siswa.
 
 ---
 

@@ -18,7 +18,9 @@
     challenge: $('screen-challenge'),
     result: $('screen-result'),
     formula: $('screen-formula'),
-    about: $('screen-about')
+    about: $('screen-about'),
+    lab: $('screen-lab'),
+    speed: $('screen-speed')
   };
 
   // Header
@@ -36,15 +38,108 @@
   // Challenge state
   let challengeAttempts = 0;
   let challengeHintsUsed = 0;
-  let challengeScore = 100;
+  let reasoningPassed = false;
   let bossIndex = 0;
   let bossLives = 3;
   let bossCorrect = 0;
   let formulaSlots = [];
   let formulaPieces = [];
 
+  /* --- Web Speech API (Text-to-Speech Offline) --- */
+  const SpeechHelper = {
+    speaking: false,
+    currentBtn: null,
+    speak(text, buttonEl) {
+      if (!('speechSynthesis' in window)) {
+        alert('Fitur pembaca suara (Speech Synthesis) tidak didukung di browser ini.');
+        return;
+      }
+      if (this.speaking) {
+        this.stop();
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const cleanText = text
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/²/g, ' kuadrat ')
+        .replace(/cm²/g, ' sentimeter kuadrat ')
+        .replace(/m²/g, ' meter kuadrat ')
+        .replace(/√/g, ' akar ')
+        .replace(/\+/g, ' tambah ')
+        .replace(/×/g, ' kali ')
+        .replace(/=/g, ' sama dengan ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'id-ID';
+      utterance.rate = 0.95;
+
+      const voices = window.speechSynthesis.getVoices();
+      const idVoice = voices.find(v => (v.lang && (v.lang.startsWith('id') || v.lang.includes('ID'))));
+      if (idVoice) utterance.voice = idVoice;
+
+      this.speaking = true;
+      this.currentBtn = buttonEl;
+      if (buttonEl) {
+        buttonEl.classList.add('speaking');
+        buttonEl.innerHTML = '⏹️ Berhenti';
+      }
+
+      utterance.onend = () => {
+        this.stop();
+      };
+      utterance.onerror = () => {
+        this.stop();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    stop() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      this.speaking = false;
+      if (this.currentBtn) {
+        this.currentBtn.classList.remove('speaking');
+        this.currentBtn.innerHTML = '🗣️ Bacakan Soal';
+        this.currentBtn = null;
+      }
+    }
+  };
+
+  /* --- Live Star Indicator Helper --- */
+  function renderLiveStarsHtml() {
+    const stars = GameEngine.getLiveStars(challengeAttempts, challengeHintsUsed);
+    let label = '';
+    if (stars === 3) {
+      label = 'Peluang 3 Bintang ⭐⭐⭐ (Sempurna)';
+    } else if (stars === 2) {
+      label = 'Peluang 2 Bintang ⭐⭐☆ (Hebat)';
+    } else {
+      label = 'Peluang 1 Bintang ⭐☆☆ (Tetap Semangat)';
+    }
+
+    return `
+      <div class="stars-row">
+        <span class="star-icon ${stars >= 1 ? '' : 'lost'}">★</span>
+        <span class="star-icon ${stars >= 2 ? '' : 'lost'}">★</span>
+        <span class="star-icon ${stars >= 3 ? '' : 'lost'}">★</span>
+      </div>
+      <span class="star-label">${label}</span>
+    `;
+  }
+
+  function updateLiveStars() {
+    const el = $('live-star-meter');
+    if (el) {
+      el.innerHTML = renderLiveStarsHtml();
+    }
+  }
+
   /* --- Screen Router --- */
   function showScreen(name, options = {}) {
+    SpeechHelper.stop();
     // Hide all screens
     Object.values(screens).forEach(s => { if (s) s.classList.remove('active'); });
     const target = screens[name];
@@ -64,12 +159,15 @@
     // Update header title
     const titles = {
       splash: '', menu: 'Menu Utama', world: 'Pilih Dunia', level: 'Pilih Level',
-      story: 'Cerita', challenge: '', result: 'Hasil', formula: 'Pelajari Rumus', about: 'Tentang'
+      story: 'Cerita', challenge: '', result: 'Hasil', formula: 'Pelajari Rumus', about: 'Tentang',
+      lab: 'Studio Lab Geometri', speed: 'Ujian Kilat Pythagoras'
     };
     headerTitle.textContent = options.title || titles[name] || '';
 
-    // Score
-    headerScore.textContent = `⭐ ${GameEngine.totalScore()}`;
+    // Always keep header score in sync with total stars
+    if (headerScore) {
+      headerScore.textContent = `⭐ ${GameEngine.getTotalStars()}/75`;
+    }
 
     // Render screen content
     switch (name) {
@@ -81,11 +179,14 @@
       case 'result': renderResult(options); break;
       case 'formula': renderFormula(); break;
       case 'about': renderAbout(); break;
+      case 'lab': renderLab(); break;
+      case 'speed': renderSpeedScreen(); break;
     }
   }
 
   /* --- Back Navigation --- */
   function goBack() {
+    SpeechHelper.stop();
     GameAudio.click();
     switch (currentScreen) {
       case 'world': showScreen('menu'); break;
@@ -95,6 +196,8 @@
       case 'result': showScreen('level'); break;
       case 'formula': showScreen('menu'); break;
       case 'about': showScreen('menu'); break;
+      case 'lab': showScreen('menu'); break;
+      case 'speed': showScreen('menu'); break;
       default: showScreen('menu');
     }
   }
@@ -116,7 +219,7 @@
   const mascotQuotes = [
     'Halo! Aku <b>Adi si Arsitek Cilik</b> 👷‍♂️📐<br>Ayo jelajahi 5 dunia & taklukkan 25 tantangan geometri!',
     'Tahukah kamu? Pada segitiga siku-siku berlaku rumus <b>a² + b² = c²</b>!',
-    'Arsitektur rumoh panggung Aceh sarat dengan keindahan konsep geometri!',
+    'Arsitektur dan struktur bangunan sarat dengan keindahan konsep geometri!',
     'Keliling adalah garis batas luar, sedangkan luas adalah bidang di dalamnya!',
     'Pahami konsepnya, pecahkan tantangannya! Ayo mulai berpetualang! 🚀'
   ];
@@ -138,18 +241,11 @@
       };
     }
 
-    // Update stars and score pills
-    let totalStars = 0;
-    const prog = GameEngine.progress();
-    for (let w = 0; w < 5; w++) {
-      for (let l = 0; l < 5; l++) {
-        totalStars += prog[w][l].stars;
-      }
-    }
+    // Update stars and missions completed pills
     const starEl = $('menu-stars-count');
-    if (starEl) starEl.textContent = `${totalStars}`;
-    const scoreEl = $('menu-score-count');
-    if (scoreEl) scoreEl.textContent = `${GameEngine.totalScore()}`;
+    if (starEl) starEl.textContent = `${GameEngine.getTotalStars()}/75`;
+    const levelEl = $('menu-level-count');
+    if (levelEl) levelEl.textContent = `${GameEngine.getTotalCompleted()}/25`;
   }
 
   /* --- World Select Screen (Dashboard Petualangan) --- */
@@ -169,23 +265,21 @@
       };
     }
 
+    const starEl = $('dash-total-stars');
+    if (starEl) starEl.textContent = `${GameEngine.getTotalStars()}/75`;
+
+    const missionsEl = $('dash-total-missions');
+    if (missionsEl) missionsEl.textContent = `${GameEngine.getTotalCompleted()}/25`;
+
     const prog = GameEngine.progress();
-    let totalStars = 0;
     let completedWorlds = 0;
     for (let w = 0; w < 5; w++) {
       let isWorldDone = true;
       for (let l = 0; l < 5; l++) {
-        totalStars += prog[w][l].stars;
         if (!prog[w][l].completed) isWorldDone = false;
       }
       if (isWorldDone) completedWorlds++;
     }
-
-    const starEl = $('dash-total-stars');
-    if (starEl) starEl.textContent = `${totalStars}/75`;
-
-    const scoreEl = $('dash-total-score');
-    if (scoreEl) scoreEl.textContent = `${GameEngine.totalScore()}`;
 
     const worldEl = $('dash-worlds-done');
     if (worldEl) worldEl.textContent = `${completedWorlds}/5`;
@@ -271,7 +365,7 @@
     const illust = $('story-illustration');
     // SVG scene based on world
     const scenes = [
-      // World 1: Rumoh panggung
+      // World 1: Struktur bangunan
       `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
         <rect x="0" y="150" width="300" height="50" fill="#8B7355"/>
         <rect x="80" y="80" width="140" height="70" fill="#E8D5B7" stroke="#8B6914" stroke-width="2"/>
@@ -318,7 +412,7 @@
     currentLevelData = GameEngine.getLevelData(selectedWorld, selectedLevel);
     challengeAttempts = 0;
     challengeHintsUsed = 0;
-    challengeScore = 100;
+    reasoningPassed = false;
     bossIndex = 0;
     bossLives = 3;
     bossCorrect = 0;
@@ -354,16 +448,55 @@
 
   function renderSingleChallenge(area, ld) {
     let html = '';
+    const hasReasoning = !!(ld.reasoningQuestion && !reasoningPassed);
 
-    // Learning goal
+    // Header: Learning goal & Live Star Indicator
     html += `<div class="challenge-header">
       <span class="challenge-goal">🎯 ${ld.learningGoal}</span>
+      <div class="live-star-meter" id="live-star-meter">
+        ${renderLiveStarsHtml()}
+      </div>
     </div>`;
 
-    // Visual
+    // Step banner if reasoning question exists
+    if (ld.reasoningQuestion) {
+      html += `<div style="text-align:center;margin-bottom:8px">
+        <span class="step-banner">${hasReasoning ? 'Langkah 1/2: Analisis & Penalaran Konsep' : 'Langkah 2/2: Perhitungan Matematis Presisi'}</span>
+      </div>`;
+    }
+
+    // Visual Shape (always visible so students can inspect the geometric structure)
     if (ld.shape && ld.shape !== 'none') {
       const svgContent = GameEngine.renderShapeSVG(ld, ld.type === 'slider' ? GameEngine.state.sliderValue : undefined);
       html += `<div class="challenge-visual" id="challenge-visual">${svgContent}</div>`;
+    }
+
+    // IF in Reasoning Phase (Step 1): show conceptual inquiry card
+    if (hasReasoning) {
+      const rq = ld.reasoningQuestion;
+      html += `
+        <div class="reasoning-card" id="reasoning-card">
+          <div class="reasoning-header">
+            <span>🧠</span> Tahap Penalaran: Analisis Komponen & Formula
+          </div>
+          <div class="reasoning-prompt">${rq.prompt}</div>
+          <div class="reasoning-options" id="reasoning-options">
+            ${rq.options.map((opt, i) => `
+              <button class="reasoning-btn" data-index="${i}">
+                <span class="reasoning-badge">${String.fromCharCode(65 + i)}</span>
+                <span class="reasoning-text">${opt.text}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="reasoning-feedback" id="reasoning-feedback"></div>
+          <button class="btn btn-primary btn-proceed-step hidden" id="btn-proceed-step">
+            Lanjut ke Perhitungan Presisi →
+          </button>
+        </div>
+      `;
+      area.innerHTML = html;
+      bindReasoningEvents(ld);
+      return;
     }
 
     // Question
@@ -391,13 +524,56 @@
     // Hint area
     html += `<div id="hint-area"></div>`;
 
-    // Actions
+    // Actions with 3-Tier Scaffolding label
+    const hints = ld.hints || [];
+    const tierNum = Math.min(challengeHintsUsed + 1, 3);
+    const currHint = hints[challengeHintsUsed];
+    const tierLabel = currHint && currHint.tier ? ` (${currHint.tier})` : '';
+
     html += `<div class="challenge-actions">
-      <button class="btn btn-sm btn-hint" id="btn-hint" onclick="void(0)">💡 Petunjuk</button>
+      <button class="btn btn-sm btn-hint" id="btn-hint">💡 Bantuan Tier ${tierNum}/3${tierLabel}</button>
     </div>`;
 
     area.innerHTML = html;
     bindChallengeEvents(ld);
+  }
+
+  /* --- Event Handler: Reasoning Step --- */
+  function bindReasoningEvents(ld) {
+    const btns = document.querySelectorAll('.reasoning-btn');
+    const fbEl = $('reasoning-feedback');
+    const proceedBtn = $('btn-proceed-step');
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index);
+        const opt = ld.reasoningQuestion.options[idx];
+
+        if (opt.correct) {
+          GameAudio.correct();
+          btns.forEach(b => {
+            b.disabled = true;
+            b.classList.remove('selected-wrong');
+          });
+          btn.classList.add('selected-correct');
+          fbEl.className = 'reasoning-feedback success';
+          fbEl.innerHTML = `<strong>Tepat Sekali!</strong> ${opt.explanation}`;
+          proceedBtn.classList.remove('hidden');
+        } else {
+          GameAudio.wrong();
+          btn.classList.add('selected-wrong');
+          fbEl.className = 'reasoning-feedback error';
+          fbEl.innerHTML = `<strong>Pikirkan Kembali:</strong> ${opt.explanation}`;
+          setTimeout(() => btn.classList.remove('selected-wrong'), 700);
+        }
+      });
+    });
+
+    proceedBtn.addEventListener('click', () => {
+      GameAudio.click();
+      reasoningPassed = true;
+      renderSingleChallenge($('challenge-area'), ld);
+    });
   }
 
   function renderInputType(ld) {
@@ -641,7 +817,7 @@
       bindFormulaSortEvents(ld);
     }
 
-    // Hint button
+    // Hint button (3-Tier Scaffolding Hints)
     const btnHint = $('btn-hint');
     if (btnHint) {
       btnHint.addEventListener('click', () => {
@@ -649,13 +825,52 @@
         if (challengeHintsUsed < hints.length) {
           GameAudio.hintSound();
           const hintArea = $('hint-area');
-          const hint = hints[challengeHintsUsed];
-          hintArea.innerHTML = `<div class="hint-popup"><div class="hint-label">💡 Petunjuk ${challengeHintsUsed + 1}:</div>${hint}</div>`;
+          const hintObj = hints[challengeHintsUsed];
+
+          const tierLabel = typeof hintObj === 'object' && hintObj.tier ? hintObj.tier : `Tahap ${challengeHintsUsed + 1}`;
+          const tierText = typeof hintObj === 'object' && hintObj.text ? hintObj.text : hintObj;
+          const tierClass = typeof hintObj === 'object' && hintObj.tier ? `tier-${hintObj.tier.toLowerCase()}` : 'tier-konsep';
+
+          hintArea.innerHTML = `
+            <div class="hint-popup">
+              <div style="display:flex;align-items:center;margin-bottom:6px">
+                <span class="hint-tier-tag ${tierClass}">Tier ${challengeHintsUsed + 1}: ${tierLabel}</span>
+                <span class="hint-penalty-badge" style="background:rgba(232,168,56,0.2);color:#B87700">Panduan Belajar</span>
+              </div>
+              <div class="hint-text" style="font-size:13px;line-height:1.5">${tierText}</div>
+            </div>
+          `;
+
+          // Scaffolding visual highlight on shape
+          const visualEl = $('challenge-visual');
+          if (visualEl) {
+            visualEl.style.boxShadow = '0 0 16px rgba(232, 168, 56, 0.7)';
+            visualEl.style.borderColor = 'var(--c-secondary)';
+            setTimeout(() => {
+              if (visualEl) {
+                visualEl.style.boxShadow = '';
+                visualEl.style.borderColor = '';
+              }
+            }, 2500);
+          }
+
           challengeHintsUsed++;
-          challengeScore = Math.max(10, challengeScore - 10);
+          updateLiveStars();
+
+          // Update button state
+          const nextTierNum = Math.min(challengeHintsUsed + 1, 3);
+          if (challengeHintsUsed < hints.length) {
+            const nextHint = hints[challengeHintsUsed];
+            const nextTierName = nextHint && nextHint.tier ? ` (${nextHint.tier})` : '';
+            btnHint.textContent = `💡 Bantuan Tier ${nextTierNum}/3${nextTierName}`;
+          } else {
+            btnHint.textContent = '💡 Semua Bantuan Terbuka';
+            btnHint.disabled = true;
+            btnHint.style.opacity = '0.6';
+          }
         } else {
           const hintArea = $('hint-area');
-          hintArea.innerHTML = `<div class="hint-popup"><div class="hint-label">🤷</div>Semua petunjuk sudah ditampilkan.</div>`;
+          hintArea.innerHTML = `<div class="hint-popup"><div class="hint-label">💡 Bantuan Terbuka</div>Semua panduan bertahap telah dibuka. Silakan coba langkah kalkulasinya!</div>`;
         }
       });
     }
@@ -685,7 +900,10 @@
         if (challengeHintsUsed < hints.length) {
           GameAudio.hintSound();
           const hintArea = $('hint-area');
-          hintArea.innerHTML = `<div class="hint-popup"><div class="hint-label">💡 Petunjuk ${challengeHintsUsed + 1}:</div>${hints[challengeHintsUsed]}</div>`;
+          const hintObj = hints[challengeHintsUsed];
+          const hintText = typeof hintObj === 'object' && hintObj.text ? hintObj.text : hintObj;
+          const hintTier = typeof hintObj === 'object' && hintObj.tier ? hintObj.tier : `Tahap ${challengeHintsUsed + 1}`;
+          hintArea.innerHTML = `<div class="hint-popup"><div class="hint-label">💡 Petunjuk: ${hintTier}</div>${hintText}</div>`;
           challengeHintsUsed++;
         }
       });
@@ -786,9 +1004,10 @@
       const cfg = ld.puzzleConfig;
       const allDone = cfg.dropzones.every(dz => GameEngine.state.puzzleMatches[dz.id] === dz.correctValue);
       if (allDone) {
+        const earnedStars = GameEngine.calcLevelStars(challengeAttempts, challengeHintsUsed);
         setTimeout(() => {
           showFeedback(true, '🎉 Terbukti! a² + b² = c²\n9 + 16 = 25 ✓', () => {
-            finishLevel();
+            finishLevel(earnedStars);
           });
         }, 500);
       }
@@ -796,7 +1015,7 @@
       // Wrong match
       GameAudio.wrong();
       challengeAttempts++;
-      challengeScore = Math.max(10, challengeScore - 15);
+      updateLiveStars();
       dropzone.style.animation = 'shake 0.4s';
       setTimeout(() => { dropzone.style.animation = ''; }, 400);
       showFeedback(false, ld.feedbackWrong ? ld.feedbackWrong() : 'Coba pasangkan ke sisi yang benar!');
@@ -981,22 +1200,19 @@
 
     if (isCorrect) {
       GameAudio.correct();
-      if (challengeAttempts === 0) challengeScore = 100;
-      else if (challengeAttempts === 1) challengeScore = 70;
-      else if (challengeAttempts === 2) challengeScore = 40;
-      else challengeScore = 30;
-      challengeScore = Math.max(10, challengeScore - challengeHintsUsed * 10);
+      const earnedStars = GameEngine.calcLevelStars(challengeAttempts, challengeHintsUsed);
 
       const slotsRow = $('formula-slots-row');
       if (slotsRow) slotsRow.classList.add('correct');
 
       showFeedback(true, '🎉 Hebat! Rumus tersusun dengan benar!', () => {
-        finishLevel();
+        finishLevel(earnedStars);
       });
     } else {
       GameAudio.wrong();
       challengeAttempts++;
-      challengeScore = Math.max(10, challengeScore - 15);
+      updateLiveStars();
+
       const slotsRow = $('formula-slots-row');
       if (slotsRow) {
         slotsRow.style.animation = 'shake 0.4s';
@@ -1040,27 +1256,35 @@
 
     if (isCorrect) {
       GameAudio.correct();
-      if (challengeAttempts === 0) challengeScore = 100;
-      else if (challengeAttempts === 1) challengeScore = 70;
-      else if (challengeAttempts === 2) challengeScore = 40;
-      else challengeScore = 30;
-      challengeScore = Math.max(10, challengeScore - challengeHintsUsed * 10);
+      const earnedStars = GameEngine.calcLevelStars(challengeAttempts, challengeHintsUsed);
 
       const inputEl = $('input-answer') || $('slider-input');
       if (inputEl) inputEl.classList.add('success');
 
-      showFeedback(true, '🎉 Benar! Kamu hebat!', () => {
-        finishLevel();
+      showFeedback(true, '🎉 Jawaban Tepat! Analisis dan perhitunganmu sangat presisi!', () => {
+        finishLevel(earnedStars);
       });
     } else {
       GameAudio.wrong();
       challengeAttempts++;
+      updateLiveStars();
+
       const inputEl = $('input-answer');
       if (inputEl) {
         inputEl.classList.add('error');
-        setTimeout(() => inputEl.classList.remove('error'), 500);
+        // KOSONGKAN INPUT & SHAKE (Inquiry-Based: siswa harus menghitung ulang mandiri)
+        inputEl.value = '';
+        setTimeout(() => inputEl.classList.remove('error'), 600);
+        setTimeout(() => inputEl.focus(), 250);
       }
-      const fb = typeof ld.feedbackWrong === 'function' ? ld.feedbackWrong(userVal) : 'Jawaban belum tepat, coba lagi!';
+
+      const visualEl = $('challenge-visual');
+      if (visualEl) {
+        visualEl.style.animation = 'shake 0.4s';
+        setTimeout(() => { if (visualEl) visualEl.style.animation = ''; }, 450);
+      }
+
+      const fb = typeof ld.feedbackWrong === 'function' ? ld.feedbackWrong(userVal) : 'Jawaban belum tepat, silakan coba hitung kembali!';
       showFeedback(false, fb);
     }
   }
@@ -1079,23 +1303,20 @@
     if (isCorrect) {
       GameAudio.correct();
       btn.classList.add('correct');
-      if (challengeAttempts === 0) challengeScore = 100;
-      else if (challengeAttempts === 1) challengeScore = 70;
-      else if (challengeAttempts === 2) challengeScore = 40;
-      else challengeScore = 30;
-      challengeScore = Math.max(10, challengeScore - challengeHintsUsed * 10);
+      const earnedStars = GameEngine.calcLevelStars(challengeAttempts, challengeHintsUsed);
 
       setTimeout(() => {
-        showFeedback(true, '🎉 Benar!', () => finishLevel());
+        showFeedback(true, '🎉 Pilihan Tepat! Pemahaman konsepmu sangat baik!', () => finishLevel(earnedStars));
       }, 400);
     } else {
       GameAudio.wrong();
       btn.classList.add('wrong');
       challengeAttempts++;
+      updateLiveStars();
 
       const fb = ld.feedbackByOption ? ld.feedbackByOption[idx] : 'Jawaban kurang tepat, coba lagi!';
       setTimeout(() => {
-        showFeedback(false, fb || 'Jawaban kurang tepat!', () => {
+        showFeedback(false, fb || 'Jawaban kurang tepat, coba periksa kembali sifat bangunnya!', () => {
           // Re-enable and reset options
           document.querySelectorAll('.mcq-option').forEach(b => {
             b.disabled = false;
@@ -1129,20 +1350,24 @@
       GameAudio.loseLife();
       bossLives--;
       challengeAttempts++;
+
+      // Update hearts immediately
+      const livesEl = $('boss-lives');
+      if (livesEl) livesEl.innerHTML = renderLives();
+
       input.classList.add('error');
+      // Kosongkan input dan shake (Inquiry-based feedback)
+      input.value = '';
       setTimeout(() => input.classList.remove('error'), 500);
+      setTimeout(() => input.focus(), 250);
 
       if (bossLives <= 0) {
-        showFeedback(false, 'Nyawa habis! ' + (typeof bq.feedbackWrong === 'function' ? bq.feedbackWrong() : ''), () => {
+        showFeedback(false, '💔 Nyawa habis! Jangan menyerah, seorang arsitek sejati belajar dari kesalahan.', () => {
           finishBoss();
         });
       } else {
-        const fb = typeof bq.feedbackWrong === 'function' ? bq.feedbackWrong() : 'Coba lagi!';
-        showFeedback(false, fb + `\n\n❤️ Sisa nyawa: ${bossLives}`, () => {
-          // Update lives display
-          const livesEl = $('boss-lives');
-          if (livesEl) livesEl.innerHTML = renderLives();
-        });
+        const fb = typeof bq.feedbackWrong === 'function' ? bq.feedbackWrong(userVal) : 'Jawaban belum tepat!';
+        showFeedback(false, fb + `\n\n❤️ Sisa nyawa: ${bossLives}`);
       }
     }
   }
@@ -1166,15 +1391,17 @@
       bossLives--;
       btn.classList.add('wrong');
 
+      // Update hearts immediately
+      const livesEl = $('boss-lives');
+      if (livesEl) livesEl.innerHTML = renderLives();
+
       if (bossLives <= 0) {
         const fb = bq.feedbackByOption ? bq.feedbackByOption[idx] : '';
-        setTimeout(() => showFeedback(false, 'Nyawa habis! ' + fb, () => finishBoss()), 500);
+        setTimeout(() => showFeedback(false, '💔 Nyawa habis! ' + fb, () => finishBoss()), 500);
       } else {
         const fb = bq.feedbackByOption ? bq.feedbackByOption[idx] : 'Coba lagi!';
         setTimeout(() => showFeedback(false, (fb || 'Jawaban kurang tepat!') + `\n\n❤️ Sisa nyawa: ${bossLives}`, () => {
           document.querySelectorAll('.mcq-option').forEach(b => { b.disabled = false; b.classList.remove('wrong'); });
-          const livesEl = $('boss-lives');
-          if (livesEl) livesEl.innerHTML = renderLives();
         }), 500);
       }
     }
@@ -1191,17 +1418,130 @@
   }
 
   function finishBoss() {
-    challengeScore = Math.round((bossCorrect / 3) * 100);
-    finishLevel();
+    if (bossLives <= 0) {
+      showBossGameOver();
+      return;
+    }
+    const earnedStars = GameEngine.calcBossStars(bossCorrect, bossLives);
+    finishLevel(earnedStars);
   }
 
-  /* --- Finish Level --- */
-  function finishLevel() {
-    const result = GameEngine.completeLevel(selectedWorld, selectedLevel, challengeScore);
+  function showBossGameOver() {
+    GameAudio.wrong();
+    showFeedback(false, '💔 Kamu kehabisan nyawa saat menghadapi Boss!\n\nJangan berkecil hati! Pelajari kembali rumus dan strategi geometrimu, lalu coba lagi.', () => {
+      startChallenge();
+    });
+  }
+
+  /* --- Finish Level with Post-Level Reflection (Deep Learning) --- */
+  function finishLevel(earnedStars = 3) {
+    const ld = currentLevelData;
+    if (ld && ld.reflectionCard) {
+      showReflectionModal(ld, () => {
+        finalizeLevelComplete(earnedStars);
+      });
+    } else {
+      finalizeLevelComplete(earnedStars);
+    }
+  }
+
+  function finalizeLevelComplete(earnedStars = 3) {
+    const result = GameEngine.completeLevel(selectedWorld, selectedLevel, earnedStars, challengeAttempts);
     GameAudio.levelComplete();
     GameEngine.startConfetti();
     setTimeout(() => GameEngine.stopConfetti(), 3000);
     showScreen('result', result);
+  }
+
+  /* --- Post-Level Reflection Modal (Metacognition & Arsitektur Bangunan) --- */
+  function showReflectionModal(ld, onDone) {
+    const rc = ld.reflectionCard;
+    if (!rc) {
+      if (onDone) onDone();
+      return;
+    }
+
+    const existing = document.querySelector('.reflection-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'reflection-overlay';
+
+    let choicesHtml = '';
+    if (rc.options && rc.options.length) {
+      choicesHtml = `
+        <div class="reflection-choices" id="reflection-choices">
+          ${rc.options.map((opt, i) => `
+            <button class="reflection-opt-btn" data-index="${i}">
+              <span style="font-weight:700;margin-right:6px">${String.fromCharCode(65 + i)}.</span> ${opt.text}
+            </button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    overlay.innerHTML = `
+      <div class="reflection-modal">
+        <div class="reflection-top">
+          <div class="reflection-top-icon">🪞</div>
+          <div>
+            <div class="reflection-title">Jurnal Refleksi Arsitek</div>
+            <div class="reflection-subtitle">Makna Konsep dalam Arsitektur Bangunan</div>
+          </div>
+        </div>
+
+        <div class="reflection-question-box">
+          <div class="reflection-question-label">Pertanyaan Reflektif:</div>
+          <div class="reflection-question-text">${rc.question}</div>
+        </div>
+
+        ${choicesHtml}
+
+        <div class="reflection-conclusion-card ${rc.options && rc.options.length ? '' : 'show'}" id="reflection-conclusion">
+          <div class="reflection-conclusion-header">
+            <span>🏛️</span> Nilai Arsitektur & Makna Matematis:
+          </div>
+          <div class="reflection-conclusion-text">${rc.conclusion}</div>
+        </div>
+
+        <button class="btn btn-primary btn-reflection-done ${rc.options && rc.options.length ? 'hidden' : ''}" id="btn-reflection-done">
+          Lihat Blueprint & Skor Akhir 🏆
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const doneBtn = $('btn-reflection-done');
+    const conclusionCard = $('reflection-conclusion');
+
+    if (rc.options && rc.options.length) {
+      const optBtns = overlay.querySelectorAll('.reflection-opt-btn');
+      optBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.index);
+          const opt = rc.options[idx];
+
+          if (opt.correct) {
+            GameAudio.correct();
+            btn.classList.add('correct');
+            optBtns.forEach(b => b.disabled = true);
+            conclusionCard.classList.add('show');
+            doneBtn.classList.remove('hidden');
+          } else {
+            GameAudio.wrong();
+            btn.classList.add('wrong');
+            setTimeout(() => btn.classList.remove('wrong'), 700);
+          }
+        });
+      });
+    }
+
+    doneBtn.addEventListener('click', () => {
+      GameAudio.click();
+      overlay.remove();
+      if (onDone) onDone();
+    });
   }
 
   /* --- Inline Error --- */
@@ -1257,36 +1597,48 @@
 
   /* --- Result Screen --- */
   function renderResult(opts = {}) {
-    const score = opts.score || 0;
-    const stars = opts.stars || 0;
+    const stars = opts.stars || 1;
 
-    $('result-score').textContent = score;
     const starsContainer = $('result-stars');
-    starsContainer.innerHTML = '';
-    for (let i = 0; i < 3; i++) {
-      const span = document.createElement('span');
-      span.className = `star-result${i < stars ? '' : ' empty'}`;
-      span.textContent = i < stars ? '★' : '☆';
-      starsContainer.appendChild(span);
-      // Trigger star sound
-      if (i < stars) {
-        setTimeout(() => GameAudio.star(), 200 + i * 300);
+    if (starsContainer) {
+      starsContainer.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const span = document.createElement('span');
+        span.className = `star-result${i < stars ? '' : ' empty'}`;
+        span.textContent = i < stars ? '★' : '☆';
+        starsContainer.appendChild(span);
+        // Trigger star sound
+        if (i < stars) {
+          setTimeout(() => GameAudio.star(), 200 + i * 300);
+        }
+      }
+    }
+
+    const badgeTierEl = $('result-badge-tier');
+    if (badgeTierEl) {
+      if (stars === 3) {
+        badgeTierEl.textContent = '⭐⭐⭐ Arsitek Sempurna';
+      } else if (stars === 2) {
+        badgeTierEl.textContent = '⭐⭐☆ Arsitek Hebat';
+      } else {
+        badgeTierEl.textContent = '⭐☆☆ Arsitek Berbakat';
       }
     }
 
     const messages = [
       'Coba lagi, kamu pasti bisa!',
-      'Bagus! Tapi masih bisa lebih baik! ⭐',
-      'Hebat! Hampir sempurna! ⭐⭐',
-      'Luar biasa! Sempurna! ⭐⭐⭐'
+      'Kerja bagus! Terus asah pemahaman geometrimu! ⭐',
+      'Hebat! Struktur bangunan berdiri kokoh dan presisi! ⭐⭐',
+      'Luar biasa sempurna! Kamu Master Arsitek Bangunan! ⭐⭐⭐'
     ];
-    $('result-message').textContent = messages[stars] || messages[0];
+    const msgEl = $('result-message');
+    if (msgEl) msgEl.textContent = messages[stars] || messages[1];
 
     const mascot = $('result-mascot');
     if (mascot) mascot.innerHTML = GameEngine.getMascotSVG(stars >= 2 ? 'happy' : 'normal', 80);
 
-    // Update score display
-    headerScore.textContent = `⭐ ${GameEngine.totalScore()}`;
+    // Update header score display
+    if (headerScore) headerScore.textContent = `⭐ ${GameEngine.getTotalStars()}/75`;
 
     // Check if all levels done
     const allDone = GameEngine.progress().every(w => w.every(l => l.completed));
@@ -1298,7 +1650,7 @@
       if (nextBtn) nextBtn.classList.add('hidden');
       if (victoryMsg) {
         victoryMsg.classList.remove('hidden');
-        victoryMsg.textContent = '🏆 Selamat! Kamu telah menyelesaikan semua level! Rumoh panggung selesai dibangun!';
+        victoryMsg.textContent = '🏆 Selamat! Kamu telah menyelesaikan semua level! Seluruh kompleks bangunan megah selesai dibangun!';
       }
     } else {
       if (nextBtn) nextBtn.classList.remove('hidden');
@@ -1396,8 +1748,19 @@
     // Load saved progress
     GameEngine.loadGame();
 
+    // Keep header score in sync
+    if (headerScore) {
+      headerScore.textContent = `⭐ ${GameEngine.getTotalStars()}/75`;
+    }
+
     // Sound button state
     btnSound.textContent = GameAudio.isOn() ? '🔊' : '🔇';
+
+    // Global audio unlock on first user gesture (Safari & mobile best practice)
+    window.addEventListener('pointerdown', () => {
+      GameAudio.init();
+      GameAudio.resume();
+    }, { once: true });
 
     // Event listeners
     headerBack.addEventListener('click', goBack);
@@ -1421,6 +1784,10 @@
       } else if (selectedWorld < GAME_DATA.worldStories.length - 1) {
         selectedWorld++;
         selectedLevel = 0;
+      } else {
+        // Last level of the entire game reached!
+        showScreen('world');
+        return;
       }
       // Check if unlocked
       if (GameEngine.isLevelUnlocked(selectedWorld, selectedLevel)) {

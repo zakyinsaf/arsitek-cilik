@@ -49,18 +49,29 @@
   - Tunjukkan pembuktian Teorema Pythagoras $a^2 + b^2 = c^2$ pada segitiga siku-siku (tripel 3-4-5).
   - Tunjukkan penggunaan **Fitur Hint Bertahap** (Level 1 Hint $\rightarrow$ Level 2 $\rightarrow$ Level 3).
   - Tunjukkan **Tantangan Mini-Boss (Level 3-5)**: Sistem 3 nyawa dan 3 soal berurutan yang menantang pemikiran kritis siswa.
+  - Tunjukkan fitur **Aksesibilitas Narasi Suara (Web Speech API)**: Klik tombol speaker untuk mendengarkan soal dibacakan secara otomatis.
 - **Narasi Suara**:
-  > *"Memasuki Dunia 3, siswa menerapkan Teorema Pythagoras untuk menghitung sisi miring tangga dan kawat penopang. Fitur petunjuk bertingkat membimbing siswa langkah demi langkah jika membutuhkan bantuan tanpa langsung membocorkan jawaban.*  
-  > *Di akhir setiap dunia, siswa menghadapi Mini-Boss dengan sistem nyawa terbatas yang menguji daya tahan dan ketelitian berpikir siswa secara komprehensif."*
+  > *"Memasuki Dunia 3, siswa menerapkan Teorema Pythagoras untuk menghitung sisi miring tangga dan kawat penopang. Fitur petunjuk bertingkat membimbing siswa langkah demi langkah tanpa membocorkan jawaban langsung.*  
+  > *Aplikasi juga dilengkapi pembaca audio berbasis Web Speech API agar ramah bagi siswa dengan preferensi belajar auditori. Di akhir setiap dunia, siswa menghadapi Mini-Boss dengan sistem nyawa terbatas."*
 
 ---
 
-### BAGIAN 5: PENUTUP & KESIMPULAN (03:45 – 04:15)
+### BAGIAN 5: FITUR INOVASI — LAB GEOMETRI & UJIAN KILAT (03:45 – 04:30)
+- **Visual**:
+  - Masuk ke **Studio Laboratorium Geometri**: Geser slider $a$ dan $b$, perlihatkan 3 persegi luas $a^2 + b^2 = c^2$ yang membesar/mengecil secara real-time dan badge tripel Pythagoras yang bersinar.
+  - Masuk ke **Mode Ujian Kilat Tripel Pythagoras**: Tunjukkan permainan kilat 60 detik, kombo multiplier, dan skor akhir.
+- **Narasi Suara**:
+  > *"Sebagai sarana eksperimen konstruktivisme mandiri, tersedia Studio Laboratorium Geometri tempat siswa bebas memanipulasi bentuk segitiga dan membuktikan rumus Pythagoras secara visual.*  
+  > *Siswa juga dapat menguji kelancaran numerasinya dalam mode Ujian Kilat 60 detik dengan sistem kombo dan pencatatan rekor."*
+
+---
+
+### BAGIAN 6: PENUTUP & KESIMPULAN (04:30 – 05:00)
 - **Visual**:
   - Layar hasil level dengan bintang 3 dan perolehan skor total.
   - Tampilkan halaman Tentang Game dengan kredit HIMMAT FKIP USK.
 - **Narasi Suara**:
-  > *"Dengan arsitektur mandiri, sintesis suara prosedural, estetika budaya lokal yang kaya, dan landasan pedagogis yang kuat, 'Arsitek Cilik: Misi Pythagoras' siap menjadi media pembelajaran matematika mandiri yang memotivasi siswa Indonesia untuk mencintai geometri.*  
+  > *"Dengan total 5 dunia dan 25 misi bertingkat, arsitektur 100% mandiri tanpa ketergantungan internet, sintesis audio prosedural, dan fitur inklusif, 'Arsitek Cilik: Misi Pythagoras' siap menjadi media pembelajaran matematika mandiri yang memotivasi siswa Indonesia untuk mencintai geometri.*  
   > *Terima kasih, salam arsitek muda, dan salam matematika!"*
 
 ---

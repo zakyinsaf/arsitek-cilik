@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="Arsitek Cilik: Misi Pythagoras - Game edukasi matematika geometri dan Teorema Pythagoras bertema arsitektur lokal Aceh untuk siswa SMP (DMGC 2026 FKIP USK).">
+  <meta name="description" content="Arsitek Cilik: Misi Pythagoras - Game edukasi matematika geometri dan Teorema Pythagoras bertema arsitektur bangunan untuk siswa SMP (DMGC 2026 FKIP USK).">
   <meta name="theme-color" content="#1B6B4A">
   <title>Arsitek Cilik: Misi Pythagoras — Game Matematika SMP (DMGC 2026)</title>
   <link rel="stylesheet" href="css/style.css">
@@ -20,7 +20,7 @@
       </div>
       <div class="header-center" id="header-title">Arsitek Cilik</div>
       <div class="header-right">
-        <span id="header-score" class="score-badge">⭐ 0</span>
+        <span id="header-score" class="score-badge">⭐ 0/75</span>
         <button id="btn-sound" class="btn-icon" aria-label="Toggle Suara">🔊</button>
       </div>
     </header>
@@ -30,7 +30,7 @@
       <div class="splash-subtitle">DMGC 2026 • HIMMAT FKIP UNIVERSITAS SYIAH KUALA</div>
       <h1 class="splash-title">Arsitek Cilik<br><span style="color:var(--c-secondary-light)">Misi Pythagoras</span></h1>
       <div id="splash-mascot" class="splash-mascot"></div>
-      <p class="splash-tagline">Bantu Arsitek Adi merehabilitasi mahakarya arsitektur rumoh panggung Aceh menggunakan kekuatan geometri!</p>
+      <p class="splash-tagline">Bantu Arsitek Adi merancang dan membangun struktur bangunan modern menggunakan kekuatan geometri!</p>
       <button id="btn-start" class="btn btn-secondary">Mulai Petualangan 🚀</button>
     </section>
 
@@ -47,12 +47,16 @@
       <div class="menu-stats-pill">
         <span>⭐ <strong id="menu-stars-count">0</strong>/75 Bintang</span>
         <span class="pill-divider">•</span>
-        <span>🏆 <strong id="menu-score-count">0</strong> Poin</span>
+        <span>🏆 <strong id="menu-level-count">0</strong>/25 Misi Selesai</span>
       </div>
       <div class="menu-buttons">
-        <button id="btn-play" class="btn btn-primary btn-pulse">🎮 Mulai Petualangan</button>
-        <button id="btn-formula" class="btn btn-secondary">📐 Pelajari Rumus</button>
-        <button id="btn-about" class="btn btn-outline">ℹ️ Tentang Game</button>
+        <button id="btn-play" class="btn btn-primary btn-pulse">🎮 Mulai Petualangan (25 Misi)</button>
+        <div class="menu-action-row">
+          <button id="btn-lab" class="btn btn-secondary">🔬 Lab Geometri</button>
+          <button id="btn-speed" class="btn btn-accent">⚡ Ujian Kilat</button>
+        </div>
+        <button id="btn-formula" class="btn btn-outline">📐 Pelajari Rumus</button>
+        <button id="btn-about" class="btn btn-subtle">ℹ️ Tentang Game</button>
       </div>
     </section>
 
@@ -79,8 +83,8 @@
           <div class="dash-stat-item">
             <span class="dash-stat-icon">🏆</span>
             <div class="dash-stat-text">
-              <span class="dash-stat-val" id="dash-total-score">0</span>
-              <span class="dash-stat-lbl">Skor</span>
+              <span class="dash-stat-val" id="dash-total-missions">0/25</span>
+              <span class="dash-stat-lbl">Misi Selesai</span>
             </div>
           </div>
           <div class="dash-stat-item">
@@ -119,12 +123,11 @@
       <div id="challenge-area"></div>
     </section>
 
-    <!-- 7. Layar Hasil Level -->
+    <!-- 7. Layar Hasil Level (Bintang & Predikat Arsitek) -->
     <section id="screen-result" class="screen">
       <div id="result-mascot" style="width:80px;height:100px;margin:0 auto 8px;"></div>
       <div class="result-stars" id="result-stars"></div>
-      <div class="result-label">Skor Level</div>
-      <div class="result-score" id="result-score">0</div>
+      <div class="result-badge-tier" id="result-badge-tier">Pencapaian Bintang</div>
       <div class="result-message" id="result-message"></div>
       <div id="victory-message" class="victory-message hidden"></div>
       <div class="result-buttons">
@@ -176,6 +179,178 @@
 
         <div class="about-quote">
           <em>Pahami konsepnya, pecahkan tantangannya!</em>
+        </div>
+      </div>
+    </section>
+    
+    <!-- 10. Layar Laboratorium Geometri (Interactive Sandbox) -->
+    <section id="screen-lab" class="screen">
+      <div class="lab-header">
+        <h2 class="lab-title">🔬 Studio Laboratorium Geometri</h2>
+        <p class="lab-subtitle">Eksplorasi bebas manipulasi bangun geometri & pembuktian Teorema Pythagoras secara real-time</p>
+      </div>
+
+      <div class="lab-tabs">
+        <button id="tab-lab-pythagoras" class="lab-tab active">📐 Bukti Pythagoras</button>
+        <button id="tab-lab-shapes" class="lab-tab">🔷 Bangun Datar</button>
+      </div>
+
+      <!-- Tab 1: Pembuktian Pythagoras Dinamis -->
+      <div id="lab-content-pythagoras" class="lab-content active">
+        <div class="lab-badge-container">
+          <div id="lab-triple-badge" class="lab-triple-badge hidden">
+            ✨ <strong>Tripel Pythagoras Bulat Ditemukan!</strong> (<span id="lab-triple-text">3 - 4 - 5</span>)
+          </div>
+        </div>
+
+        <div class="lab-canvas-card">
+          <div id="lab-pythagoras-svg" class="lab-svg-wrap"></div>
+        </div>
+
+        <div class="lab-controls-card">
+          <div class="lab-slider-group">
+            <div class="lab-slider-label">
+              <span>Sisi Alas (a): <strong id="lbl-side-a">3</strong> cm</span>
+              <span class="badge-sq">Luas a² = <span id="lbl-sq-a">9</span> cm²</span>
+            </div>
+            <input type="range" id="slider-side-a" min="1" max="15" value="3" class="custom-slider">
+          </div>
+
+          <div class="lab-slider-group">
+            <div class="lab-slider-label">
+              <span>Sisi Tegak (b): <strong id="lbl-side-b">4</strong> cm</span>
+              <span class="badge-sq">Luas b² = <span id="lbl-sq-b">16</span> cm²</span>
+            </div>
+            <input type="range" id="slider-side-b" min="1" max="15" value="4" class="custom-slider">
+          </div>
+
+          <div class="lab-formula-box" id="lab-pythagoras-formula">
+            <div class="formula-row">a² + b² = c²</div>
+            <div class="calc-row"><span id="lbl-calc-ab">3² + 4² = 9 + 16 = 25</span></div>
+            <div class="result-row">Sisi Miring (c) = √<span id="lbl-calc-sum">25</span> = <strong id="lbl-side-c">5</strong> cm (Luas c² = <span id="lbl-sq-c">25</span> cm²)</div>
+          </div>
+
+          <div class="lab-presets">
+            <span class="presets-title">⚡ Preset Tripel Pythagoras:</span>
+            <div class="presets-buttons">
+              <button class="btn-preset" data-a="3" data-b="4">3 - 4 - 5</button>
+              <button class="btn-preset" data-a="5" data-b="12">5 - 12 - 13</button>
+              <button class="btn-preset" data-a="6" data-b="8">6 - 8 - 10</button>
+              <button class="btn-preset" data-a="8" data-b="15">8 - 15 - 17</button>
+              <button class="btn-preset" data-a="9" data-b="12">9 - 12 - 15</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Bangun Datar Dinamis -->
+      <div id="lab-content-shapes" class="lab-content hidden">
+        <div class="shape-selector-pills" id="shape-selector-pills">
+          <button class="shape-pill active" data-shape="square">Persegi</button>
+          <button class="shape-pill" data-shape="rectangle">Persegi Panjang</button>
+          <button class="shape-pill" data-shape="triangle">Segitiga</button>
+          <button class="shape-pill" data-shape="trapezoid">Trapesium</button>
+          <button class="shape-pill" data-shape="circle">Lingkaran</button>
+        </div>
+
+        <div class="lab-canvas-card">
+          <div id="lab-shape-svg" class="lab-svg-wrap"></div>
+        </div>
+
+        <div class="lab-controls-card" id="lab-shape-controls">
+          <!-- Dynamic sliders generated by JS based on selected shape -->
+        </div>
+
+        <div class="lab-formula-box" id="lab-shape-calc">
+          <!-- Real-time formula breakdown -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. Layar Tantangan Kilat (Time-Attack 60 Detik) -->
+    <section id="screen-speed" class="screen">
+      <!-- State 1: Start Screen -->
+      <div id="speed-start-card" class="speed-card">
+        <div class="speed-badge-top">⚡ MODE LATIHAN REFLEKS</div>
+        <h2 class="speed-title">Ujian Kilat Pythagoras</h2>
+        <p class="speed-desc">Uji kelancaran kognitif dan refleks matematismu! Jawab sebanyak mungkin soal Tripel Pythagoras dalam waktu 60 detik.</p>
+        
+        <div class="speed-record-box">
+          <span class="speed-record-icon">🏆</span>
+          <div class="speed-record-info">
+            <span class="speed-record-label">Rekor Tertinggi Kamu</span>
+            <span class="speed-record-val" id="speed-high-score">0 Poin</span>
+          </div>
+        </div>
+
+        <div class="speed-tips">
+          <div class="tip-item">⚡ <strong>Combo Streak</strong>: Jawab benar berturut-turut untuk melipatgandakan poin!</div>
+          <div class="tip-item">🧠 <strong>Ingat Tripel Dasar</strong>: 3-4-5, 5-12-13, 8-15-17, dan kelipatannya!</div>
+        </div>
+
+        <button id="btn-speed-start" class="btn btn-accent btn-pulse" style="width:100%;margin-top:16px;">Mulai Ujian Kilat ⚡ (60 Detik)</button>
+      </div>
+
+      <!-- State 2: Active Gameplay Screen -->
+      <div id="speed-game-card" class="speed-card hidden">
+        <div class="speed-status-bar">
+          <div class="speed-timer-wrap">
+            <span class="speed-timer-icon">⏱️</span>
+            <span class="speed-timer-text" id="speed-timer-text">60s</span>
+            <div class="speed-timer-bar-bg">
+              <div class="speed-timer-bar-fill" id="speed-timer-fill"></div>
+            </div>
+          </div>
+          <div class="speed-score-wrap">
+            <span class="speed-score-label">Skor</span>
+            <span class="speed-score-val" id="speed-current-score">0</span>
+          </div>
+          <div class="speed-combo-wrap" id="speed-combo-badge">
+            <span id="speed-combo-text">Combo x1</span>
+          </div>
+        </div>
+
+        <div class="speed-question-card">
+          <div class="speed-q-badge" id="speed-q-category">Tripel Pythagoras</div>
+          <div class="speed-q-text" id="speed-question-text">Segitiga siku-siku memiliki sisi 3 dan 4. Berapa sisi miringnya?</div>
+          <div class="speed-q-visual" id="speed-question-visual"></div>
+        </div>
+
+        <div class="speed-options-grid" id="speed-options-grid">
+          <!-- 4 option buttons -->
+        </div>
+      </div>
+
+      <!-- State 3: Game Over Screen -->
+      <div id="speed-result-card" class="speed-card hidden">
+        <div class="speed-result-header">
+          <div id="speed-result-mascot" style="width:80px;height:95px;margin:0 auto 8px;"></div>
+          <h2 class="speed-result-title">Waktu Habis! 🔔</h2>
+          <div class="speed-tier-badge" id="speed-tier-badge">Insinyur Tangguh</div>
+        </div>
+
+        <div class="speed-stats-grid">
+          <div class="speed-stat-box">
+            <span class="stat-num" id="speed-stat-score">0</span>
+            <span class="stat-lbl">Total Skor</span>
+          </div>
+          <div class="speed-stat-box">
+            <span class="stat-num" id="speed-stat-correct">0</span>
+            <span class="stat-lbl">Soal Benar</span>
+          </div>
+          <div class="speed-stat-box">
+            <span class="stat-num" id="speed-stat-combo">0</span>
+            <span class="stat-lbl">Max Combo</span>
+          </div>
+        </div>
+
+        <div class="speed-highscore-notice hidden" id="speed-new-high">
+          🎉 <strong>Rekor Baru Tercipta!</strong> Luar biasa!
+        </div>
+
+        <div class="speed-result-actions">
+          <button id="btn-speed-retry" class="btn btn-accent">⚡ Main Lagi</button>
+          <button id="btn-speed-menu" class="btn btn-outline">🏠 Menu Utama</button>
         </div>
       </div>
     </section>

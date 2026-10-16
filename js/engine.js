@@ -21,6 +21,9 @@ const GameEngine = (() => {
     sliderValue: 1,
     // Formula Sort state
     formulaSortOrder: [],
+    // Deep Learning state
+    reasoningPassed: false,
+    hintLevel: 0,
     // Debounce
     submitLocked: false
   };
@@ -69,28 +72,48 @@ const GameEngine = (() => {
     return false;
   }
 
-  /* --- Skor & Bintang --- */
-  function calcScore() {
-    if (state.attempts === 0) return 100;
-    if (state.attempts === 1) return 70;
-    if (state.attempts === 2) return 40;
-    return 30;
+  /* --- Sistem Penilaian Berbasis Bintang (Pure Star System - Tanpa Skor 100) --- */
+  function calcLevelStars(attempts = state.attempts, hintsCount = state.hintsUsed) {
+    // 3 Bintang: Percobaan ke-1 tanpa bantuan atau maksimal 1 petunjuk konsep
+    if (attempts === 0 && hintsCount <= 1) return 3;
+    // 2 Bintang: Percobaan ke-2 atau menggunakan 2 petunjuk
+    if (attempts <= 1 && hintsCount <= 2) return 2;
+    // 1 Bintang: Percobaan ke-3+ atau menggunakan panduan langkah
+    return 1;
   }
 
-  function calcBossScore() {
-    return Math.round((state.bossCorrect / 3) * 100);
-  }
-
-  function applyHintPenalty(score) {
-    const penalty = state.hintsUsed * 10;
-    return Math.max(10, score - penalty);
-  }
-
-  function getStars(score) {
-    if (score >= 90) return 3;
-    if (score >= 60) return 2;
-    if (score >= 30) return 1;
+  function calcBossStars(correct = state.bossCorrect, lives = state.bossLives) {
+    if (correct === 3 && lives === 3) return 3;
+    if (correct === 3 && lives >= 1) return 2;
+    if (lives > 0) return 1;
     return 0;
+  }
+
+  // Live Star Indicator berdasarkan jumlah percobaan & bantuan yang dibuka
+  function getLiveStars(attempts = state.attempts, hintsCount = state.hintsUsed) {
+    if (attempts === 0 && hintsCount <= 1) return 3;
+    if (attempts <= 1 && hintsCount <= 2) return 2;
+    return 1;
+  }
+
+  function getTotalStars() {
+    let total = 0;
+    for (let w = 0; w < 5; w++) {
+      for (let l = 0; l < 5; l++) {
+        total += progress[w][l].stars || 0;
+      }
+    }
+    return total;
+  }
+
+  function getTotalCompleted() {
+    let done = 0;
+    for (let w = 0; w < 5; w++) {
+      for (let l = 0; l < 5; l++) {
+        if (progress[w][l].completed) done++;
+      }
+    }
+    return done;
   }
 
   /* --- Validasi Input --- */
@@ -143,18 +166,13 @@ const GameEngine = (() => {
     return GAME_DATA.levels[w * 5 + l];
   }
 
-  function completeLevel(w, l, score) {
-    const stars = getStars(score);
-    if (score > progress[w][l].score) {
-      totalScore += score - progress[w][l].score;
-      progress[w][l].score = score;
-    }
+  function completeLevel(w, l, stars = 1) {
     if (stars > progress[w][l].stars) {
       progress[w][l].stars = stars;
     }
     progress[w][l].completed = true;
     saveGame();
-    return { score, stars };
+    return { stars, totalStars: getTotalStars(), totalCompleted: getTotalCompleted() };
   }
 
   /* --- SVG Renderers --- */
@@ -882,18 +900,170 @@ const GameEngine = (() => {
     return svg;
   }
 
+  /* --- Pythagoras Proof SVG Generator (Interactive Sandbox) --- */
+  function renderPythagorasProofSVG(a, b) {
+    const c = Math.sqrt(a * a + b * b);
+    const cDisplay = Number.isInteger(c) ? c : c.toFixed(2);
+    const sqA = a * a;
+    const sqB = b * b;
+    const sqC = Number.isInteger(c * c) ? Math.round(c * c) : (c * c).toFixed(1);
+
+    const spanX = a + 2 * b;
+    const spanY = 2 * a + b;
+    const maxSpan = Math.max(spanX, spanY, 8);
+    const scale = Math.min(220 / maxSpan, 24);
+
+    const sa = a * scale;
+    const sb = b * scale;
+
+    const vw = 440;
+    const vh = 320;
+    const x0 = vw / 2 - (sa - sb) / 2 - 10;
+    const y0 = vh / 2 + (sa - sb) / 2 + 10;
+
+    const p1x = x0, p1y = y0 - sb;
+    const p2x = x0 + sa, p2y = y0;
+    const p3x = p2x + sb, p3y = p2y - sa;
+    const p4x = p1x + sb, p4y = p1y - sa;
+
+    const centerAx = x0 + sa / 2, centerAy = y0 + sa / 2;
+    const centerBx = x0 - sb / 2, centerBy = y0 - sb / 2;
+    const centerCx = (p1x + p3x) / 2, centerCy = (p1y + p3y) / 2;
+
+    let svg = `<svg viewBox="0 0 ${vw} ${vh}" xmlns="${SVG_NS}" width="100%" height="100%">
+      <defs>
+        <linearGradient id="grad-sq-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#2ECC71" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#27AE60" stop-opacity="0.55"/>
+        </linearGradient>
+        <linearGradient id="grad-sq-b" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#F39C12" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#D35400" stop-opacity="0.55"/>
+        </linearGradient>
+        <linearGradient id="grad-sq-c" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3498DB" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#2980B9" stop-opacity="0.55"/>
+        </linearGradient>
+      </defs>
+
+      <pattern id="lab-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E8E0D0" stroke-width="0.8"/>
+      </pattern>
+      <rect width="${vw}" height="${vh}" fill="url(#lab-grid)" rx="12"/>
+
+      <!-- Square on Side a -->
+      <rect x="${x0}" y="${y0}" width="${sa}" height="${sa}" fill="url(#grad-sq-a)" stroke="#27AE60" stroke-width="2.5" rx="3"/>
+      <text x="${centerAx}" y="${centerAy - 4}" text-anchor="middle" fill="#145A32" font-size="12" font-weight="700" font-family="system-ui">a²</text>
+      <text x="${centerAx}" y="${centerAy + 12}" text-anchor="middle" fill="#145A32" font-size="14" font-weight="800" font-family="system-ui">${sqA}</text>
+
+      <!-- Square on Side b -->
+      <rect x="${x0 - sb}" y="${y0 - sb}" width="${sb}" height="${sb}" fill="url(#grad-sq-b)" stroke="#D35400" stroke-width="2.5" rx="3"/>
+      <text x="${centerBx}" y="${centerBy - 4}" text-anchor="middle" fill="#935116" font-size="12" font-weight="700" font-family="system-ui">b²</text>
+      <text x="${centerBx}" y="${centerBy + 12}" text-anchor="middle" fill="#935116" font-size="14" font-weight="800" font-family="system-ui">${sqB}</text>
+
+      <!-- Square on Hypotenuse c -->
+      <polygon points="${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y} ${p4x},${p4y}" fill="url(#grad-sq-c)" stroke="#2980B9" stroke-width="2.5"/>
+      <text x="${centerCx}" y="${centerCy - 4}" text-anchor="middle" fill="#1B4F72" font-size="12" font-weight="700" font-family="system-ui">c² = a² + b²</text>
+      <text x="${centerCx}" y="${centerCy + 14}" text-anchor="middle" fill="#1B4F72" font-size="16" font-weight="800" font-family="system-ui">${sqC}</text>
+
+      <!-- Right Triangle -->
+      <polygon points="${x0},${y0} ${x0 + sa},${y0} ${x0},${y0 - sb}" fill="#FFFFFF" stroke="#1C2833" stroke-width="3"/>
+      <rect x="${x0}" y="${y0 - 12}" width="12" height="12" fill="none" stroke="#1C2833" stroke-width="2"/>
+
+      <!-- Labels -->
+      <rect x="${x0 + sa/2 - 22}" y="${y0 - 18}" width="44" height="16" rx="4" fill="#FFFFFF" fill-opacity="0.9"/>
+      <text x="${x0 + sa/2}" y="${y0 - 6}" text-anchor="middle" fill="#27AE60" font-size="12" font-weight="800" font-family="system-ui">a = ${a}</text>
+
+      <rect x="${x0 + 4}" y="${y0 - sb/2 - 8}" width="44" height="16" rx="4" fill="#FFFFFF" fill-opacity="0.9"/>
+      <text x="${x0 + 26}" y="${y0 - sb/2 + 4}" text-anchor="middle" fill="#D35400" font-size="12" font-weight="800" font-family="system-ui">b = ${b}</text>
+
+      <rect x="${(p1x + p2x)/2 - 28}" y="${(p1y + p2y)/2 - 18}" width="56" height="16" rx="4" fill="#FFFFFF" fill-opacity="0.9"/>
+      <text x="${(p1x + p2x)/2}" y="${(p1y + p2y)/2 - 6}" text-anchor="middle" fill="#2980B9" font-size="12" font-weight="800" font-family="system-ui">c = ${cDisplay}</text>
+    </svg>`;
+    return svg;
+  }
+
+  /* --- 2D Shapes Lab SVG Generator --- */
+  function renderShapeLabSVG(shape, p = {}) {
+    const vw = 400, vh = 240;
+    let inner = '';
+    const cx = vw / 2, cy = vh / 2;
+
+    if (shape === 'square') {
+      const s = p.side || 6;
+      const px = Math.min(s * 15, 140);
+      const x = cx - px / 2, y = cy - px / 2;
+      inner = `
+        <rect x="${x}" y="${y}" width="${px}" height="${px}" fill="#E8F8F5" stroke="#1B6B4A" stroke-width="2.5" rx="3"/>
+        <text x="${cx}" y="${y + px + 18}" text-anchor="middle" fill="#1B6B4A" font-size="13" font-weight="700" font-family="system-ui">sisi = ${s} cm</text>
+        <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="#14503A" font-size="15" font-weight="800" font-family="system-ui">L = ${s * s} cm²</text>
+      `;
+    } else if (shape === 'rectangle') {
+      const w = p.width || 8, h = p.height || 5;
+      const pw = Math.min(w * 16, 200), ph = Math.min(h * 16, 120);
+      const x = cx - pw / 2, y = cy - ph / 2;
+      inner = `
+        <rect x="${x}" y="${y}" width="${pw}" height="${ph}" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5" rx="3"/>
+        <text x="${cx}" y="${y + ph + 18}" text-anchor="middle" fill="#C08A20" font-size="13" font-weight="700" font-family="system-ui">panjang = ${w} cm</text>
+        <text x="${x + pw + 12}" y="${cy + 5}" text-anchor="start" fill="#C08A20" font-size="13" font-weight="700" font-family="system-ui">lebar = ${h} cm</text>
+        <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="#7D6608" font-size="15" font-weight="800" font-family="system-ui">L = ${w * h} cm²</text>
+      `;
+    } else if (shape === 'triangle') {
+      const a = p.base || 8, t = p.height || 6;
+      const pa = Math.min(a * 16, 180), pt = Math.min(t * 16, 120);
+      const x1 = cx - pa / 2, y1 = cy + pt / 2;
+      const x2 = cx + pa / 2, y2 = cy + pt / 2;
+      const x3 = cx, y3 = cy - pt / 2;
+      inner = `
+        <polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="#EBF5FB" stroke="#2980B9" stroke-width="2.5"/>
+        <line x1="${x3}" y1="${y3}" x2="${x3}" y2="${y1}" stroke="#D94F3B" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <text x="${cx}" y="${y1 + 18}" text-anchor="middle" fill="#2980B9" font-size="13" font-weight="700" font-family="system-ui">alas = ${a} cm</text>
+        <text x="${x3 + 8}" y="${cy}" text-anchor="start" fill="#D94F3B" font-size="12" font-weight="700" font-family="system-ui">tinggi = ${t} cm</text>
+        <text x="${cx}" y="${y1 - 18}" text-anchor="middle" fill="#1B4F72" font-size="14" font-weight="800" font-family="system-ui">L = ${(a * t) / 2} cm²</text>
+      `;
+    } else if (shape === 'trapezoid') {
+      const a = p.top || 4, b = p.bottom || 8, t = p.height || 5;
+      const pa = Math.min(a * 15, 120), pb = Math.min(b * 15, 200), pt = Math.min(t * 15, 100);
+      const y1 = cy - pt / 2, y2 = cy + pt / 2;
+      const x1 = cx - pa / 2, x2 = cx + pa / 2;
+      const x3 = cx + pb / 2, x4 = cx - pb / 2;
+      const area = ((a + b) * t) / 2;
+      inner = `
+        <polygon points="${x1},${y1} ${x2},${y1} ${x3},${y2} ${x4},${y2}" fill="#F4ECF7" stroke="#8E44AD" stroke-width="2.5"/>
+        <line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke="#D94F3B" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <text x="${cx}" y="${y1 - 8}" text-anchor="middle" fill="#8E44AD" font-size="12" font-weight="700" font-family="system-ui">sisi atas (a) = ${a} cm</text>
+        <text x="${cx}" y="${y2 + 18}" text-anchor="middle" fill="#8E44AD" font-size="12" font-weight="700" font-family="system-ui">sisi bawah (b) = ${b} cm</text>
+        <text x="${x1 - 8}" y="${cy}" text-anchor="end" fill="#D94F3B" font-size="11" font-weight="700" font-family="system-ui">t = ${t}</text>
+        <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="#512E5F" font-size="14" font-weight="800" font-family="system-ui">L = ${area} cm²</text>
+      `;
+    } else if (shape === 'circle') {
+      const r = p.radius || 4;
+      const pr = Math.min(r * 12, 65);
+      const area = (Math.PI * r * r).toFixed(1);
+      inner = `
+        <circle cx="${cx}" cy="${cy}" r="${pr}" fill="#FDEDEC" stroke="#E74C3C" stroke-width="2.5"/>
+        <line x1="${cx}" y1="${cy}" x2="${cx + pr}" y2="${cy}" stroke="#1C2833" stroke-width="2"/>
+        <circle cx="${cx}" cy="${cy}" r="3" fill="#1C2833"/>
+        <text x="${cx + pr / 2}" y="${cy - 8}" text-anchor="middle" fill="#1C2833" font-size="12" font-weight="700" font-family="system-ui">r = ${r} cm</text>
+        <text x="${cx}" y="${cy + 24}" text-anchor="middle" fill="#922B21" font-size="14" font-weight="800" font-family="system-ui">L = πr² ≈ ${area} cm²</text>
+      `;
+    }
+    return `<svg viewBox="0 0 ${vw} ${vh}" xmlns="${SVG_NS}" width="100%" height="100%">${inner}</svg>`;
+  }
+
   /* --- Public API --- */
   return {
     state,
     progress: () => progress,
-    totalScore: () => totalScore,
+    totalScore: () => getTotalStars(),
+    getTotalStars,
+    getTotalCompleted,
     initProgress,
     saveGame,
     loadGame,
-    calcScore,
-    calcBossScore,
-    applyHintPenalty,
-    getStars,
+    calcLevelStars,
+    calcBossStars,
+    getLiveStars,
     validateInput,
     checkAnswer,
     lockSubmit,
@@ -904,6 +1074,8 @@ const GameEngine = (() => {
     getLevelData,
     completeLevel,
     renderShapeSVG,
+    renderPythagorasProofSVG,
+    renderShapeLabSVG,
     startConfetti,
     stopConfetti,
     startBgParticles,
