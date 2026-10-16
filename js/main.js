@@ -140,6 +140,10 @@
   /* --- Screen Router --- */
   function showScreen(name, options = {}) {
     SpeechHelper.stop();
+    if (currentScreen === 'speed' && name !== 'speed' && speedTimerInterval) {
+      clearInterval(speedTimerInterval);
+      speedTimerInterval = null;
+    }
     // Hide all screens
     Object.values(screens).forEach(s => { if (s) s.classList.remove('active'); });
     const target = screens[name];
@@ -197,7 +201,13 @@
       case 'formula': showScreen('menu'); break;
       case 'about': showScreen('menu'); break;
       case 'lab': showScreen('menu'); break;
-      case 'speed': showScreen('menu'); break;
+      case 'speed':
+        if (speedTimerInterval) {
+          clearInterval(speedTimerInterval);
+          speedTimerInterval = null;
+        }
+        showScreen('menu');
+        break;
       default: showScreen('menu');
     }
   }
@@ -243,9 +253,9 @@
 
     // Update stars and missions completed pills
     const starEl = $('menu-stars-count');
-    if (starEl) starEl.textContent = `${GameEngine.getTotalStars()}/75`;
+    if (starEl) starEl.textContent = GameEngine.getTotalStars();
     const levelEl = $('menu-level-count');
-    if (levelEl) levelEl.textContent = `${GameEngine.getTotalCompleted()}/25`;
+    if (levelEl) levelEl.textContent = GameEngine.getTotalCompleted();
   }
 
   /* --- World Select Screen (Dashboard Petualangan) --- */
@@ -402,6 +412,49 @@
         <line x1="70" y1="122" x2="230" y2="122" stroke="#8B4513" stroke-width="3"/>
         <line x1="70" y1="110" x2="70" y2="130" stroke="#8B4513" stroke-width="4"/>
         <line x1="230" y1="110" x2="230" y2="130" stroke="#8B4513" stroke-width="4"/>
+      </svg>`,
+      // World 4: Taman & Kolam (Lingkaran & Busur)
+      `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="300" height="200" fill="#E8F8F5"/>
+        <rect x="0" y="140" width="300" height="60" fill="#2ECC71" opacity="0.3"/>
+        <circle cx="150" cy="115" r="65" fill="#E8F6F3" stroke="#1ABC9C" stroke-width="4"/>
+        <circle cx="150" cy="115" r="45" fill="#D4EFDF" stroke="#27AE60" stroke-width="2" stroke-dasharray="6,4"/>
+        <circle cx="150" cy="115" r="25" fill="#5DADE2" stroke="#2980B9" stroke-width="3"/>
+        <path d="M 150 115 Q 140 80 130 90" fill="none" stroke="#AED6F1" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 150 115 Q 160 80 170 90" fill="none" stroke="#AED6F1" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 150 115 Q 150 70 150 80" fill="none" stroke="#AED6F1" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="45" cy="110" r="22" fill="#27AE60" opacity="0.85"/>
+        <rect x="42" y="132" width="6" height="20" fill="#795548"/>
+        <circle cx="255" cy="110" r="22" fill="#27AE60" opacity="0.85"/>
+        <rect x="252" y="132" width="6" height="20" fill="#795548"/>
+        <circle cx="95" cy="155" r="8" fill="#BDC3C7"/>
+        <circle cx="115" cy="165" r="7" fill="#BDC3C7"/>
+        <circle cx="185" cy="165" r="7" fill="#BDC3C7"/>
+        <circle cx="205" cy="155" r="8" fill="#BDC3C7"/>
+        <circle cx="65" cy="160" r="4" fill="#E74C3C"/>
+        <circle cx="75" cy="168" r="4" fill="#F39C12"/>
+        <circle cx="225" cy="168" r="4" fill="#9B59B6"/>
+        <circle cx="235" cy="160" r="4" fill="#E91E63"/>
+      </svg>`,
+      // World 5: Gudang & Menara (Bangun Ruang)
+      `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="300" height="200" fill="#EBF5FB"/>
+        <rect x="0" y="155" width="300" height="45" fill="#95A5A6" opacity="0.4"/>
+        <rect x="45" y="60" width="45" height="100" fill="#D5DBDB" stroke="#34495E" stroke-width="2"/>
+        <polygon points="45,60 90,60 67.5,20" fill="#E74C3C" stroke="#C0392B" stroke-width="2"/>
+        <polygon points="67.5,20 90,60 80,60" fill="#922B21" opacity="0.3"/>
+        <rect x="58" y="75" width="18" height="15" fill="#34495E" rx="2"/>
+        <rect x="58" y="105" width="18" height="15" fill="#34495E" rx="2"/>
+        <rect x="58" y="135" width="18" height="25" fill="#2C3E50"/>
+        <rect x="115" y="90" width="155" height="70" fill="#EAEDED" stroke="#2980B9" stroke-width="2"/>
+        <polygon points="110,90 275,90 195,45" fill="#3498DB" stroke="#2471A3" stroke-width="2"/>
+        <rect x="160" y="115" width="65" height="45" fill="#BDC3C7" stroke="#7F8C8D" stroke-width="1.5"/>
+        <line x1="160" y1="126" x2="225" y2="126" stroke="#95A5A6" stroke-width="1"/>
+        <line x1="160" y1="137" x2="225" y2="137" stroke="#95A5A6" stroke-width="1"/>
+        <line x1="160" y1="148" x2="225" y2="148" stroke="#95A5A6" stroke-width="1"/>
+        <circle cx="195" cy="70" r="10" fill="#F39C12" stroke="#D68910" stroke-width="1.5"/>
+        <rect x="125" y="105" width="18" height="18" fill="#AED6F1" stroke="#3498DB"/>
+        <rect x="242" y="105" width="18" height="18" fill="#AED6F1" stroke="#3498DB"/>
       </svg>`
     ];
     illust.innerHTML = scenes[selectedWorld] || scenes[0];
@@ -1735,6 +1788,622 @@
     if (aboutMascotEl) aboutMascotEl.innerHTML = GameEngine.getMascotSVG('happy', 85);
   }
 
+  /* ========================================================
+     STUDIO LABORATORIUM GEOMETRI (INTERACTIVE SANDBOX)
+     ======================================================== */
+  let labSideA = 3;
+  let labSideB = 4;
+  let activeLabTab = 'pythagoras';
+  let activeLabShape = 'square';
+  const labShapeParams = {
+    square: { side: 6 },
+    rectangle: { width: 8, height: 5 },
+    triangle: { base: 8, height: 6 },
+    trapezoid: { top: 4, bottom: 8, height: 5 },
+    circle: { radius: 4 }
+  };
+  let labInitialized = false;
+
+  function updatePythagorasLab() {
+    const a = labSideA;
+    const b = labSideB;
+    const c = Math.sqrt(a * a + b * b);
+    const isTriple = Number.isInteger(c);
+    const cDisplay = isTriple ? c : c.toFixed(2);
+    const sqA = a * a;
+    const sqB = b * b;
+    const sqC = a * a + b * b;
+
+    const lblA = $('lbl-side-a'); if (lblA) lblA.textContent = a;
+    const lblSqA = $('lbl-sq-a'); if (lblSqA) lblSqA.textContent = sqA;
+    const lblB = $('lbl-side-b'); if (lblB) lblB.textContent = b;
+    const lblSqB = $('lbl-sq-b'); if (lblSqB) lblSqB.textContent = sqB;
+
+    const sliderA = $('slider-side-a'); if (sliderA) sliderA.value = a;
+    const sliderB = $('slider-side-b'); if (sliderB) sliderB.value = b;
+
+    const lblCalcAb = $('lbl-calc-ab');
+    if (lblCalcAb) lblCalcAb.textContent = `${a}² + ${b}² = ${sqA} + ${sqB} = ${sqC}`;
+    const lblCalcSum = $('lbl-calc-sum');
+    if (lblCalcSum) lblCalcSum.textContent = sqC;
+    const lblSideC = $('lbl-side-c');
+    if (lblSideC) lblSideC.textContent = cDisplay;
+    const lblSqC = $('lbl-sq-c');
+    if (lblSqC) lblSqC.textContent = sqC;
+
+    const svgWrap = $('lab-pythagoras-svg');
+    if (svgWrap) {
+      svgWrap.innerHTML = GameEngine.renderPythagorasProofSVG(a, b);
+    }
+
+    const badge = $('lab-triple-badge');
+    const badgeText = $('lab-triple-text');
+    if (badge && badgeText) {
+      if (isTriple) {
+        badge.classList.remove('hidden');
+        badgeText.textContent = `${a} - ${b} - ${c}`;
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  }
+
+  function updateShapeLab() {
+    const p = labShapeParams[activeLabShape];
+    const svgWrap = $('lab-shape-svg');
+    if (svgWrap) {
+      svgWrap.innerHTML = GameEngine.renderShapeLabSVG(activeLabShape, p);
+    }
+
+    const calcBox = $('lab-shape-calc');
+    if (!calcBox) return;
+
+    if (activeLabShape === 'square') {
+      const s = p.side;
+      calcBox.innerHTML = `
+        <div class="formula-row">Persegi (sisi s = ${s} cm)</div>
+        <div class="calc-row">Luas = s × s = ${s} × ${s} = <strong>${s * s} cm²</strong></div>
+        <div class="calc-row">Keliling = 4 × s = 4 × ${s} = <strong>${4 * s} cm</strong></div>
+      `;
+    } else if (activeLabShape === 'rectangle') {
+      const w = p.width, h = p.height;
+      calcBox.innerHTML = `
+        <div class="formula-row">Persegi Panjang (p = ${w} cm, l = ${h} cm)</div>
+        <div class="calc-row">Luas = p × l = ${w} × ${h} = <strong>${w * h} cm²</strong></div>
+        <div class="calc-row">Keliling = 2 × (p + l) = 2 × (${w} + ${h}) = <strong>${2 * (w + h)} cm</strong></div>
+      `;
+    } else if (activeLabShape === 'triangle') {
+      const b = p.base, h = p.height;
+      calcBox.innerHTML = `
+        <div class="formula-row">Segitiga (alas a = ${b} cm, tinggi t = ${h} cm)</div>
+        <div class="calc-row">Luas = ½ × a × t = ½ × ${b} × ${h} = <strong>${(b * h) / 2} cm²</strong></div>
+      `;
+    } else if (activeLabShape === 'trapezoid') {
+      const a = p.top, b = p.bottom, t = p.height;
+      const area = ((a + b) * t) / 2;
+      calcBox.innerHTML = `
+        <div class="formula-row">Trapesium (sisi atas a = ${a} cm, sisi bawah b = ${b} cm, tinggi t = ${t} cm)</div>
+        <div class="calc-row">Luas = ½ × (a + b) × t = ½ × (${a} + ${b}) × ${t} = <strong>${area} cm²</strong></div>
+      `;
+    } else if (activeLabShape === 'circle') {
+      const r = p.radius;
+      const area = (Math.PI * r * r).toFixed(1);
+      const kel = (2 * Math.PI * r).toFixed(1);
+      calcBox.innerHTML = `
+        <div class="formula-row">Lingkaran (jari-jari r = ${r} cm, diameter d = ${2 * r} cm)</div>
+        <div class="calc-row">Luas = π × r² ≈ 3.14 × ${r}² ≈ <strong>${area} cm²</strong></div>
+        <div class="calc-row">Keliling = 2 × π × r ≈ 2 × 3.14 × ${r} ≈ <strong>${kel} cm</strong></div>
+      `;
+    }
+  }
+
+  function renderShapeControls() {
+    const controls = $('lab-shape-controls');
+    if (!controls) return;
+    controls.innerHTML = '';
+
+    const p = labShapeParams[activeLabShape];
+
+    if (activeLabShape === 'square') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Panjang Sisi (s): <strong id="lbl-shape-s">${p.side}</strong> cm</span>
+            <span class="badge-sq">Luas: <span id="lbl-shape-sq">${p.side * p.side}</span> cm²</span>
+          </div>
+          <input type="range" id="slider-shape-s" min="1" max="15" value="${p.side}" class="custom-slider">
+        </div>
+      `;
+      $('slider-shape-s').addEventListener('input', (e) => {
+        p.side = parseInt(e.target.value, 10);
+        const lS = $('lbl-shape-s'); if (lS) lS.textContent = p.side;
+        const lSq = $('lbl-shape-sq'); if (lSq) lSq.textContent = p.side * p.side;
+        updateShapeLab();
+      });
+    } else if (activeLabShape === 'rectangle') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Panjang (p): <strong id="lbl-shape-w">${p.width}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-shape-w" min="2" max="15" value="${p.width}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Lebar (l): <strong id="lbl-shape-h">${p.height}</strong> cm</span>
+            <span class="badge-sq">Luas: <span id="lbl-shape-rect-sq">${p.width * p.height}</span> cm²</span>
+          </div>
+          <input type="range" id="slider-shape-h" min="1" max="12" value="${p.height}" class="custom-slider">
+        </div>
+      `;
+      $('slider-shape-w').addEventListener('input', (e) => {
+        p.width = parseInt(e.target.value, 10);
+        const lW = $('lbl-shape-w'); if (lW) lW.textContent = p.width;
+        const lRSq = $('lbl-shape-rect-sq'); if (lRSq) lRSq.textContent = p.width * p.height;
+        updateShapeLab();
+      });
+      $('slider-shape-h').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const lH = $('lbl-shape-h'); if (lH) lH.textContent = p.height;
+        const lRSq = $('lbl-shape-rect-sq'); if (lRSq) lRSq.textContent = p.width * p.height;
+        updateShapeLab();
+      });
+    } else if (activeLabShape === 'triangle') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Alas Segitiga (a): <strong id="lbl-shape-base">${p.base}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-shape-base" min="2" max="15" value="${p.base}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi Segitiga (t): <strong id="lbl-shape-th">${p.height}</strong> cm</span>
+            <span class="badge-sq">Luas: <span id="lbl-shape-tri-sq">${(p.base * p.height) / 2}</span> cm²</span>
+          </div>
+          <input type="range" id="slider-shape-th" min="2" max="12" value="${p.height}" class="custom-slider">
+        </div>
+      `;
+      $('slider-shape-base').addEventListener('input', (e) => {
+        p.base = parseInt(e.target.value, 10);
+        const lB = $('lbl-shape-base'); if (lB) lB.textContent = p.base;
+        const lTSq = $('lbl-shape-tri-sq'); if (lTSq) lTSq.textContent = (p.base * p.height) / 2;
+        updateShapeLab();
+      });
+      $('slider-shape-th').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const lH = $('lbl-shape-th'); if (lH) lH.textContent = p.height;
+        const lTSq = $('lbl-shape-tri-sq'); if (lTSq) lTSq.textContent = (p.base * p.height) / 2;
+        updateShapeLab();
+      });
+    } else if (activeLabShape === 'trapezoid') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Sisi Atas (a): <strong id="lbl-shape-top">${p.top}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-shape-top" min="2" max="10" value="${p.top}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Sisi Bawah (b): <strong id="lbl-shape-bot">${p.bottom}</strong> cm</span>
+          </div>
+          <input type="range" id="slider-shape-bot" min="4" max="14" value="${p.bottom}" class="custom-slider">
+        </div>
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Tinggi (t): <strong id="lbl-shape-trap-t">${p.height}</strong> cm</span>
+            <span class="badge-sq">Luas: <span id="lbl-shape-trap-sq">${((p.top + p.bottom) * p.height) / 2}</span> cm²</span>
+          </div>
+          <input type="range" id="slider-shape-trap-t" min="2" max="10" value="${p.height}" class="custom-slider">
+        </div>
+      `;
+      $('slider-shape-top').addEventListener('input', (e) => {
+        p.top = parseInt(e.target.value, 10);
+        const lTop = $('lbl-shape-top'); if (lTop) lTop.textContent = p.top;
+        const lTrSq = $('lbl-shape-trap-sq'); if (lTrSq) lTrSq.textContent = ((p.top + p.bottom) * p.height) / 2;
+        updateShapeLab();
+      });
+      $('slider-shape-bot').addEventListener('input', (e) => {
+        p.bottom = parseInt(e.target.value, 10);
+        const lBot = $('lbl-shape-bot'); if (lBot) lBot.textContent = p.bottom;
+        const lTrSq = $('lbl-shape-trap-sq'); if (lTrSq) lTrSq.textContent = ((p.top + p.bottom) * p.height) / 2;
+        updateShapeLab();
+      });
+      $('slider-shape-trap-t').addEventListener('input', (e) => {
+        p.height = parseInt(e.target.value, 10);
+        const lT = $('lbl-shape-trap-t'); if (lT) lT.textContent = p.height;
+        const lTrSq = $('lbl-shape-trap-sq'); if (lTrSq) lTrSq.textContent = ((p.top + p.bottom) * p.height) / 2;
+        updateShapeLab();
+      });
+    } else if (activeLabShape === 'circle') {
+      controls.innerHTML = `
+        <div class="lab-slider-group">
+          <div class="lab-slider-label">
+            <span>Jari-jari (r): <strong id="lbl-shape-r">${p.radius}</strong> cm</span>
+            <span class="badge-sq">Luas: ≈<span id="lbl-shape-cir-sq">${(Math.PI * p.radius * p.radius).toFixed(1)}</span> cm²</span>
+          </div>
+          <input type="range" id="slider-shape-r" min="1" max="10" value="${p.radius}" class="custom-slider">
+        </div>
+      `;
+      $('slider-shape-r').addEventListener('input', (e) => {
+        p.radius = parseInt(e.target.value, 10);
+        const lR = $('lbl-shape-r'); if (lR) lR.textContent = p.radius;
+        const lCSq = $('lbl-shape-cir-sq'); if (lCSq) lCSq.textContent = (Math.PI * p.radius * p.radius).toFixed(1);
+        updateShapeLab();
+      });
+    }
+    updateShapeLab();
+  }
+
+  function renderLab() {
+    if (!labInitialized) {
+      labInitialized = true;
+      const sA = $('slider-side-a');
+      const sB = $('slider-side-b');
+      if (sA) {
+        sA.addEventListener('input', (e) => {
+          labSideA = parseInt(e.target.value, 10);
+          updatePythagorasLab();
+        });
+      }
+      if (sB) {
+        sB.addEventListener('input', (e) => {
+          labSideB = parseInt(e.target.value, 10);
+          updatePythagorasLab();
+        });
+      }
+
+      document.querySelectorAll('.btn-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          GameAudio.click();
+          labSideA = parseInt(btn.getAttribute('data-a'), 10);
+          labSideB = parseInt(btn.getAttribute('data-b'), 10);
+          updatePythagorasLab();
+        });
+      });
+
+      const tabPyth = $('tab-lab-pythagoras');
+      const tabShapes = $('tab-lab-shapes');
+      const contentPyth = $('lab-content-pythagoras');
+      const contentShapes = $('lab-content-shapes');
+
+      if (tabPyth && tabShapes) {
+        tabPyth.addEventListener('click', () => {
+          GameAudio.click();
+          activeLabTab = 'pythagoras';
+          tabPyth.classList.add('active');
+          tabShapes.classList.remove('active');
+          if (contentPyth) contentPyth.classList.remove('hidden');
+          if (contentShapes) contentShapes.classList.add('hidden');
+          updatePythagorasLab();
+        });
+        tabShapes.addEventListener('click', () => {
+          GameAudio.click();
+          activeLabTab = 'shapes';
+          tabShapes.classList.add('active');
+          tabPyth.classList.remove('active');
+          if (contentPyth) contentPyth.classList.add('hidden');
+          if (contentShapes) contentShapes.classList.remove('hidden');
+          renderShapeControls();
+        });
+      }
+
+      document.querySelectorAll('.shape-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          GameAudio.click();
+          document.querySelectorAll('.shape-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          activeLabShape = pill.getAttribute('data-shape');
+          renderShapeControls();
+        });
+      });
+    }
+
+    if (activeLabTab === 'pythagoras') {
+      updatePythagorasLab();
+    } else {
+      renderShapeControls();
+    }
+  }
+
+  /* ========================================================
+     UJIAN KILAT PYTHAGORAS (TIME-ATTACK 60 DETIK)
+     ======================================================== */
+  let speedTimeRemaining = 60;
+  let speedScore = 0;
+  let speedCombo = 1;
+  let speedMaxCombo = 1;
+  let speedCorrectCount = 0;
+  let speedTimerInterval = null;
+  let speedAnsweringLocked = false;
+  let speedInitialized = false;
+
+  const SPEED_TRIPLES = [
+    [3, 4, 5],
+    [5, 12, 13],
+    [6, 8, 10],
+    [7, 24, 25],
+    [8, 15, 17],
+    [9, 12, 15],
+    [10, 24, 26],
+    [12, 16, 20],
+    [15, 20, 25],
+    [9, 40, 41]
+  ];
+
+  function getSpeedHighScore() {
+    return parseInt(localStorage.getItem('arsitekCilik_speed_highscore') || '0', 10);
+  }
+
+  function setSpeedHighScore(val) {
+    localStorage.setItem('arsitekCilik_speed_highscore', val.toString());
+  }
+
+  function renderSpeedScreen() {
+    if (speedTimerInterval) {
+      clearInterval(speedTimerInterval);
+      speedTimerInterval = null;
+    }
+    const startCard = $('speed-start-card');
+    const gameCard = $('speed-game-card');
+    const resultCard = $('speed-result-card');
+    if (startCard) startCard.classList.remove('hidden');
+    if (gameCard) gameCard.classList.add('hidden');
+    if (resultCard) resultCard.classList.add('hidden');
+
+    const highScoreEl = $('speed-high-score');
+    if (highScoreEl) highScoreEl.textContent = `${getSpeedHighScore()} Poin`;
+
+    if (!speedInitialized) {
+      speedInitialized = true;
+      const startBtn = $('btn-speed-start');
+      if (startBtn) {
+        startBtn.addEventListener('click', () => {
+          GameAudio.click();
+          startSpeedGame();
+        });
+      }
+      const retryBtn = $('btn-speed-retry');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => {
+          GameAudio.click();
+          startSpeedGame();
+        });
+      }
+      const menuBtn = $('btn-speed-menu');
+      if (menuBtn) {
+        menuBtn.addEventListener('click', () => {
+          GameAudio.click();
+          showScreen('menu');
+        });
+      }
+    }
+  }
+
+  function startSpeedGame() {
+    speedTimeRemaining = 60;
+    speedScore = 0;
+    speedCombo = 1;
+    speedMaxCombo = 1;
+    speedCorrectCount = 0;
+    speedAnsweringLocked = false;
+
+    const startCard = $('speed-start-card');
+    const gameCard = $('speed-game-card');
+    const resultCard = $('speed-result-card');
+    if (startCard) startCard.classList.add('hidden');
+    if (gameCard) gameCard.classList.remove('hidden');
+    if (resultCard) resultCard.classList.add('hidden');
+
+    updateSpeedStatus();
+    loadNextSpeedQuestion();
+
+    if (speedTimerInterval) clearInterval(speedTimerInterval);
+    speedTimerInterval = setInterval(() => {
+      speedTimeRemaining--;
+      updateSpeedStatus();
+      if (speedTimeRemaining <= 0) {
+        endSpeedGame();
+      }
+    }, 1000);
+  }
+
+  function updateSpeedStatus() {
+    const timerText = $('speed-timer-text');
+    if (timerText) timerText.textContent = `${speedTimeRemaining}s`;
+
+    const timerFill = $('speed-timer-fill');
+    if (timerFill) {
+      const pct = Math.max(0, Math.min(100, (speedTimeRemaining / 60) * 100));
+      timerFill.style.width = `${pct}%`;
+    }
+
+    const scoreVal = $('speed-current-score');
+    if (scoreVal) scoreVal.textContent = speedScore;
+
+    const comboText = $('speed-combo-text');
+    if (comboText) comboText.textContent = `Combo x${speedCombo}`;
+
+    const comboBadge = $('speed-combo-badge');
+    if (comboBadge) {
+      comboBadge.style.transform = speedCombo > 1 ? 'scale(1.08)' : 'scale(1)';
+    }
+  }
+
+  function generateSpeedQuestion() {
+    const triple = SPEED_TRIPLES[Math.floor(Math.random() * SPEED_TRIPLES.length)];
+    const [a, b, c] = triple;
+    const qTypes = ['hypotenuse', 'leg', 'square', 'verify'];
+    const type = qTypes[Math.floor(Math.random() * qTypes.length)];
+
+    let category = 'Tripel Pythagoras';
+    let text = '';
+    let correctAnswer = '';
+    let options = [];
+    let svg = '';
+
+    if (type === 'hypotenuse') {
+      category = 'Mencari Sisi Miring (c)';
+      text = `Segitiga siku-siku memiliki sisi tegak ${a} cm dan alas ${b} cm. Berapa sisi miringnya?`;
+      correctAnswer = `${c} cm`;
+      const wrong1 = `${c + 1} cm`;
+      const wrong2 = `${c - 1 > 0 ? c - 1 : c + 2} cm`;
+      const wrong3 = `${a + b} cm`;
+      options = [correctAnswer, wrong1, wrong2, wrong3];
+      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
+        <polygon points="25,90 135,90 25,20" fill="#E8F8F0" stroke="#1B6B4A" stroke-width="2.5"/>
+        <rect x="25" y="78" width="12" height="12" fill="none" stroke="#1B6B4A" stroke-width="1.5"/>
+        <text x="14" y="60" font-size="12" font-weight="700" fill="#1B6B4A">${a}</text>
+        <text x="80" y="105" text-anchor="middle" font-size="12" font-weight="700" fill="#1B6B4A">${b}</text>
+        <text x="88" y="50" font-size="14" font-weight="800" fill="#D94F3B">c = ?</text>
+      </svg>`;
+    } else if (type === 'leg') {
+      category = 'Mencari Sisi Tegak';
+      text = `Sisi miring segitiga siku-siku adalah ${c} cm dan alasnya ${b} cm. Berapa panjang sisi tegaknya?`;
+      correctAnswer = `${a} cm`;
+      const wrong1 = `${a + 2} cm`;
+      const wrong2 = `${a - 1 > 0 ? a - 1 : a + 3} cm`;
+      const wrong3 = `${Math.abs(c - b)} cm`;
+      options = [correctAnswer, wrong1, wrong2, wrong3];
+      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
+        <polygon points="25,90 135,90 25,20" fill="#FEF9E7" stroke="#E8A838" stroke-width="2.5"/>
+        <rect x="25" y="78" width="12" height="12" fill="none" stroke="#E8A838" stroke-width="1.5"/>
+        <text x="12" y="60" font-size="13" font-weight="800" fill="#D94F3B">? cm</text>
+        <text x="80" y="105" text-anchor="middle" font-size="12" font-weight="700" fill="#7D6608">${b}</text>
+        <text x="88" y="50" font-size="13" font-weight="700" fill="#2980B9">${c}</text>
+      </svg>`;
+    } else if (type === 'square') {
+      category = 'Kuadrat Sisi Miring (c²)';
+      text = `Jika alas ${a} cm dan sisi tegak ${b} cm, berapa nilai dari c² (a² + b²)?`;
+      correctAnswer = `${c * c}`;
+      const wrong1 = `${c * c + 10}`;
+      const wrong2 = `${a * a + b}`;
+      const wrong3 = `${c * 2}`;
+      options = [correctAnswer, wrong1, wrong2, wrong3];
+      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
+        <polygon points="25,90 135,90 25,20" fill="#EBF5FB" stroke="#2980B9" stroke-width="2.5"/>
+        <text x="80" y="60" text-anchor="middle" font-size="14" font-weight="800" fill="#1B4F72">c² = ?</text>
+        <text x="14" y="60" font-size="12" font-weight="700" fill="#2980B9">${a}</text>
+        <text x="80" y="105" text-anchor="middle" font-size="12" font-weight="700" fill="#2980B9">${b}</text>
+      </svg>`;
+    } else {
+      category = 'Verifikasi Tripel';
+      const isRight = Math.random() > 0.5;
+      const fakeC = isRight ? c : c + 2;
+      text = `Apakah kelompok bilangan [${a}, ${b}, ${fakeC}] merupakan Tripel Pythagoras?`;
+      correctAnswer = isRight ? 'Ya, Tripel Pythagoras' : 'Bukan Tripel';
+      const wrong1 = isRight ? 'Bukan Tripel' : 'Ya, Tripel Pythagoras';
+      const wrong2 = 'Segitiga Tumpul';
+      const wrong3 = 'Segitiga Sama Sisi';
+      options = [correctAnswer, wrong1, wrong2, wrong3];
+      svg = `<svg viewBox="0 0 160 110" width="140" height="95">
+        <polygon points="30,85 130,85 45,25" fill="#FDEDEC" stroke="#E74C3C" stroke-width="2.5"/>
+        <text x="80" y="60" text-anchor="middle" font-size="13" font-weight="800" fill="#922B21">${a}, ${b}, ${fakeC}</text>
+      </svg>`;
+    }
+
+    options = options.sort(() => Math.random() - 0.5);
+
+    return { category, text, correctAnswer, options, svg };
+  }
+
+  function loadNextSpeedQuestion() {
+    if (speedTimeRemaining <= 0) return;
+    speedAnsweringLocked = false;
+    const q = generateSpeedQuestion();
+
+    const catEl = $('speed-q-category');
+    if (catEl) catEl.textContent = q.category;
+
+    const textEl = $('speed-question-text');
+    if (textEl) textEl.textContent = q.text;
+
+    const visualEl = $('speed-question-visual');
+    if (visualEl) visualEl.innerHTML = q.svg;
+
+    const grid = $('speed-options-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'speed-btn-option';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => {
+        if (speedAnsweringLocked) return;
+        speedAnsweringLocked = true;
+
+        if (opt === q.correctAnswer) {
+          btn.classList.add('correct');
+          GameAudio.correct();
+          const gained = 100 * speedCombo;
+          speedScore += gained;
+          speedCorrectCount++;
+          speedCombo++;
+          if (speedCombo > speedMaxCombo) speedMaxCombo = speedCombo;
+          updateSpeedStatus();
+          setTimeout(() => {
+            loadNextSpeedQuestion();
+          }, 200);
+        } else {
+          btn.classList.add('wrong');
+          grid.querySelectorAll('.speed-btn-option').forEach(b => {
+            if (b.textContent === q.correctAnswer) b.classList.add('correct');
+          });
+          GameAudio.wrong();
+          speedCombo = 1;
+          updateSpeedStatus();
+          setTimeout(() => {
+            loadNextSpeedQuestion();
+          }, 450);
+        }
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function endSpeedGame() {
+    if (speedTimerInterval) {
+      clearInterval(speedTimerInterval);
+      speedTimerInterval = null;
+    }
+
+    const gameCard = $('speed-game-card');
+    const resultCard = $('speed-result-card');
+    if (gameCard) gameCard.classList.add('hidden');
+    if (resultCard) resultCard.classList.remove('hidden');
+
+    GameAudio.fanfare();
+
+    const statScore = $('speed-stat-score'); if (statScore) statScore.textContent = speedScore;
+    const statCorrect = $('speed-stat-correct'); if (statCorrect) statCorrect.textContent = speedCorrectCount;
+    const statCombo = $('speed-stat-combo'); if (statCombo) statCombo.textContent = `x${speedMaxCombo}`;
+
+    const tierBadge = $('speed-tier-badge');
+    if (tierBadge) {
+      if (speedScore >= 1000) tierBadge.textContent = '🌟 Grand Master Pythagoras';
+      else if (speedScore >= 600) tierBadge.textContent = '🏆 Insinyur Legendaris';
+      else if (speedScore >= 350) tierBadge.textContent = '📐 Arsitek Mahir';
+      else if (speedScore >= 150) tierBadge.textContent = '🔨 Arsitek Muda';
+      else tierBadge.textContent = '👷 Calon Arsitek';
+    }
+
+    const mascotEl = $('speed-result-mascot');
+    if (mascotEl) mascotEl.innerHTML = GameEngine.getMascotSVG(speedScore >= 350 ? 'happy' : 'normal', 80);
+
+    const prevHigh = getSpeedHighScore();
+    const newHighNotice = $('speed-new-high');
+    if (speedScore > prevHigh) {
+      setSpeedHighScore(speedScore);
+      if (newHighNotice) newHighNotice.classList.remove('hidden');
+      GameEngine.startConfetti();
+      setTimeout(() => GameEngine.stopConfetti(), 3500);
+    } else {
+      if (newHighNotice) newHighNotice.classList.add('hidden');
+    }
+  }
+
   /* --- Sound Toggle --- */
   function toggleSound() {
     GameAudio.init();
@@ -1768,6 +2437,8 @@
 
     // Menu buttons
     $('btn-play').addEventListener('click', () => { GameAudio.click(); showScreen('world'); });
+    $('btn-lab').addEventListener('click', () => { GameAudio.click(); showScreen('lab'); });
+    $('btn-speed').addEventListener('click', () => { GameAudio.click(); showScreen('speed'); });
     $('btn-formula').addEventListener('click', () => { GameAudio.click(); showScreen('formula'); });
     $('btn-about').addEventListener('click', () => { GameAudio.click(); showScreen('about'); });
 
